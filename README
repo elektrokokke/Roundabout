@@ -1,0 +1,22 @@
+                                 __            __                       __
+                                /\ \          /\ \                     /\ \__
+  _ __   ___   __  __    ___    \_\ \     __  \ \ \____    ___   __  __\ \ ,_\
+ /\`'__\/ __`\/\ \/\ \ /' _ `\  /'_` \  /'__`\ \ \ '__`\  / __`\/\ \/\ \\ \ \/
+ \ \ \//\ \L\ \ \ \_\ \/\ \/\ \/\ \L\ \/\ \L\.\_\ \ \L\ \/\ \L\ \ \ \_\ \\ \ \_
+  \ \_\\ \____/\ \____/\ \_\ \_\ \___,_\ \__/.\_\\ \_,__/\ \____/\ \____/ \ \__\
+   \/_/ \/___/  \/___/  \/_/\/_/\/__,_ /\/__/\/_/ \/___/  \/___/  \/___/   \/__/
+
+Roundabout is free software and subject to the General Public License
+(http://www.gnu.org/licenses/gpl-3.0.html).
+
+Used for development:
+* gcc, gdb
+* Qt 4.7, QtCreator 2.1 (http://qt.nokia.com)
+* Jack Audio Connection Kit (http://www.jackaudio.org)
+* Jack server: Jack 1.9.6 (previously known as jackdmp)
+* git
+
+Thanks to github for hosting this project!
+Thanks to Larry Gelberg for creating the wonderful larry3d.flf figfont seen above.
+
+See the roundabout wiki for further information about this project.
