@@ -6,6 +6,8 @@ Roundabout::Roundabout(QWidget *parent) :
     ui(new Ui::Roundabout)
 {
     ui->setupUi(this);
+    // display our RoundaboutScene in the graphics view:
+    ui->graphicsView->setScene(&roundaboutScene);
 }
 
 Roundabout::~Roundabout()

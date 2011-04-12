@@ -2,6 +2,7 @@
 #define ROUNDABOUT_H
 
 #include <QMainWindow>
+#include "roundaboutscene.h"
 
 namespace Ui {
     class Roundabout;
@@ -17,6 +18,7 @@ public:
 
 private:
     Ui::Roundabout *ui;
+    RoundaboutScene roundaboutScene;
 };
 
 #endif // ROUNDABOUT_H
