@@ -28,4 +28,5 @@ HEADERS  += roundabout.h \
 FORMS    += roundabout.ui
 
 OTHER_FILES += \
-    README
+    README \
+    license.txt
