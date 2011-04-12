@@ -16,14 +16,16 @@ SOURCES += main.cpp\
     roundabouttestitem.cpp \
     stylehelper.cpp \
     manhattanstyle.cpp \
-    styleanimator.cpp
+    styleanimator.cpp \
+    fancymainwindow.cpp
 
 HEADERS  += roundabout.h \
     roundaboutscene.h \
     roundabouttestitem.h \
     stylehelper.h \
     manhattanstyle.h \
-    styleanimator.h
+    styleanimator.h \
+    fancymainwindow.h
 
 FORMS    += roundabout.ui
 

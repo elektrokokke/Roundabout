@@ -2,16 +2,16 @@
 **
 ** This file is part of Qt Creator
 **
-** Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies).
+** Copyright (c) 2011 Nokia Corporation and/or its subsidiary(-ies).
 **
-** Contact:  Qt Software Information (qt-info@nokia.com)
+** Contact: Nokia Corporation (qt-info@nokia.com)
 **
-** Commercial Usage
+** No Commercial Usage
 **
-** Licensees holding valid Qt Commercial licenses may use this file in
-** accordance with the Qt Commercial License Agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and Nokia.
+** This file contains pre-release code and may not be distributed.
+** You may use this file in accordance with the terms and conditions
+** contained in the Technology Preview License Agreement accompanying
+** this package.
 **
 ** GNU Lesser General Public License Usage
 **
@@ -22,8 +22,12 @@
 ** ensure the GNU Lesser General Public License version 2.1 requirements
 ** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
-** If you are unsure which license is appropriate for your use, please
-** contact the sales department at qt-sales@nokia.com.
+** In addition, as a special exception, Nokia gives you certain additional
+** rights.  These rights are described in the Nokia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+**
+** If you have questions regarding the use of this file, please contact
+** Nokia at qt-info@nokia.com.
 **
 **************************************************************************/
 
@@ -37,13 +41,13 @@
 #include <QtGui/QPainter>
 #include <QtGui/QWidget>
 
-/* 
+/*
  * This is a set of helper classes to allow for widget animations in
  * the style. Its mostly taken from Vista style so it should be fully documented
  * there.
  *
  */
- 
+
 class Animation
 {
 public :
@@ -83,7 +87,7 @@ public :
 
 class StyleAnimator : public QObject
 {
-    Q_OBJECT;
+    Q_OBJECT
 
 public:
     StyleAnimator(QObject *parent = 0) : QObject(parent) {}
@@ -92,7 +96,7 @@ public:
     void startAnimation(Animation *);
     void stopAnimation(const QWidget *);
     Animation* widgetAnimation(const QWidget *) const;
-    
+
 private:
     QBasicTimer animationTimer;
     QList <Animation*> animations;
