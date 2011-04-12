@@ -22,6 +22,36 @@
 
 #include <QGraphicsEllipseItem>
 
+class RoundaboutTestCenterItem : public QGraphicsEllipseItem
+{
+public:
+    RoundaboutTestCenterItem(QRectF rect, QGraphicsItem *parent = 0);
+private:
+    QColor normalColor;
+};
+
+class RoundaboutTestSegmentItem : public QGraphicsPathItem
+{
+public:
+    RoundaboutTestSegmentItem(QRectF innerRect, QRectF outerRect, qreal angle, QGraphicsItem *parent = 0);
+protected:
+    virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
+    virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
+private:
+    QColor normalColor, highlightedColor;
+};
+
+class RoundaboutTestArrowItem : public QGraphicsPathItem
+{
+public:
+    RoundaboutTestArrowItem(QRectF innerRect, QRectF outerRect, qreal angle, qreal tipOffset, QGraphicsItem *parent = 0);
+protected:
+    virtual QVariant itemChange(GraphicsItemChange change, const QVariant & value);
+private:
+    QRectF rect;
+    QColor normalColor;
+};
+
 class RoundaboutTestItem : public QGraphicsEllipseItem
 {
 public:

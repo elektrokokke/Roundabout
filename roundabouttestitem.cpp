@@ -21,10 +21,108 @@
 #include <QPen>
 #include <QBrush>
 #include <QFont>
+#include <cmath>
+#include <QDebug>
 
 QRectF operator*(qreal scale, const QRectF &r1)
 {
     return QRectF(r1.x() * scale, r1.y() * scale, r1.width() * scale, r1.height() * scale);
+}
+
+QRectF operator+(const QRectF &r1, const QRectF &r2)
+{
+    return QRectF(r1.x() + r2.x(), r1.y() + r2.y(), r1.width() + r2.width(), r1.height() + r2.height());
+}
+
+RoundaboutTestCenterItem::RoundaboutTestCenterItem(QRectF rect, QGraphicsItem *parent) :
+    QGraphicsEllipseItem(rect, parent),
+    normalColor("steelblue")
+{
+    setPen(QPen(Qt::NoPen));
+    setBrush(QBrush(normalColor));
+}
+
+RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(QRectF innerRect, QRectF outerRect, qreal angle, QGraphicsItem *parent) :
+    QGraphicsPathItem(parent),
+    normalColor("lightsteelblue"),
+    highlightedColor("steelblue")
+{
+    setAcceptHoverEvents(true);
+    qreal gapAngle = 1;
+    QPainterPath path;
+    path.arcMoveTo(innerRect, -(angle - gapAngle * 0.5));
+    QPointF innerPos = path.currentPosition();
+    path.arcMoveTo(outerRect, -(gapAngle * 0.5));
+    path.arcTo(outerRect, -(gapAngle * 0.5), -(angle - gapAngle));
+    path.lineTo(innerPos);
+    path.arcTo(innerRect, -(angle - gapAngle * 0.5), angle - gapAngle);
+    path.closeSubpath();
+    setPath(path);
+    setPen(QPen(Qt::NoPen));
+    setBrush(QBrush(normalColor));
+}
+
+void RoundaboutTestSegmentItem::hoverEnterEvent(QGraphicsSceneHoverEvent * event)
+{
+    setBrush(QBrush(highlightedColor));
+}
+
+void RoundaboutTestSegmentItem::hoverLeaveEvent(QGraphicsSceneHoverEvent * event)
+{
+    setBrush(QBrush(normalColor));
+}
+
+RoundaboutTestArrowItem::RoundaboutTestArrowItem(QRectF innerRect, QRectF outerRect, qreal angle, qreal tipOffset, QGraphicsItem *parent) :
+    QGraphicsPathItem(parent),
+    rect(outerRect),
+    normalColor("orangered")
+{
+    setFlag(QGraphicsItem::ItemIsMovable);
+    setFlag(QGraphicsItem::ItemSendsGeometryChanges);
+    QRectF tipRect = 0.5 * (innerRect + outerRect);
+    QPainterPath path;
+    path.arcMoveTo(tipRect, -(tipOffset - 0.5 * angle));
+    QPointF arrowTipBack = path.currentPosition();
+    path.arcMoveTo(tipRect, -(tipOffset + 0.5 * angle));
+    QPointF arrowTipFront = path.currentPosition();
+    path.arcMoveTo(innerRect, -0.5 * angle);
+    QPointF arrowInnerFront = path.currentPosition();
+    path.arcMoveTo(outerRect, 0.5 * angle);
+    path.arcTo(outerRect, 0.5 * angle, -angle);
+    path.lineTo(arrowTipFront);
+    path.lineTo(arrowInnerFront);
+    path.arcTo(innerRect, -0.5 * angle, angle);
+    path.lineTo(arrowTipBack);
+    path.closeSubpath();
+    setPath(path);
+    setPen(QPen(QBrush(Qt::white), 3));
+    setBrush(QBrush(normalColor));
+}
+
+QVariant RoundaboutTestArrowItem::itemChange(GraphicsItemChange change, const QVariant & value)
+{
+    // just playing around...
+    if (change == QGraphicsItem::ItemPositionChange) {
+        // rotate the item instead of moving it:
+        QPointF newPos = value.toPointF();
+        qDebug() << "pos()" << pos();
+        qDebug() << "newPos" << newPos;
+        // compute the current position on the circle:
+        qreal rotationInRadians = rotation() * M_PI / 180.0;
+        QPointF posOnCircle(0.5 * rect.width() * cos(rotationInRadians), 0.5 * rect.height() * sin(rotationInRadians));
+        qDebug() << "posOnCircle" << posOnCircle;
+        QPointF newPosOnCircle = posOnCircle - pos() + newPos;
+        qDebug() << "newPosOnCircle" << newPosOnCircle;
+        // compute the new angle:
+        qreal newAngle = atan2(newPosOnCircle.y(), newPosOnCircle.x()) * 180.0 / M_PI;
+        qDebug() << "newAngle" << newAngle;
+        setTransformOriginPoint(-newPos);
+        setRotation(newAngle);
+        setPath(path().translated(pos() - newPos));
+        return newPos;
+    } else {
+        return QGraphicsPathItem::itemChange(change, value);
+    }
 }
 
 RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent) :
@@ -36,40 +134,20 @@ RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent) :
     setBrush(QBrush(Qt::NoBrush));
     // create a circle in the center:
     QRectF centerRect = 0.2 * rect();
-    QGraphicsEllipseItem *centerItem = new QGraphicsEllipseItem(centerRect, this);
-    centerItem->setPen(QPen(Qt::NoPen));
-    centerItem->setBrush(QBrush(QColor("steelblue")));
+    new RoundaboutTestCenterItem(centerRect, this);
     // create a circle segment for each step:
     QRectF stepOuterRect = rect();
     QRectF stepInnerRect = 0.85 * rect();
     qreal stepAngle = 360.0 / steps;
-    qreal gapAngle = 1;
-    QColor stepColor("lightsteelblue");
-    QColor stepHighlightedColor("steelblue");
     for (unsigned int i = 0; i < steps; i++) {
-        QGraphicsPathItem *stepItem = new QGraphicsPathItem(this);
-        QPainterPath stepPath;
-        stepPath.arcMoveTo(stepInnerRect, -(stepAngle * (i + 1) - gapAngle * 0.5));
-        QPointF innerPos = stepPath.currentPosition();
-        stepPath.arcMoveTo(stepOuterRect, -(stepAngle * i + gapAngle * 0.5));
-        stepPath.arcTo(stepOuterRect, -(stepAngle * i + gapAngle * 0.5), -(stepAngle - gapAngle));
-        stepPath.lineTo(innerPos);
-        stepPath.arcTo(stepInnerRect, -(stepAngle * (i + 1) - gapAngle * 0.5), stepAngle - gapAngle);
-        stepPath.closeSubpath();
-        stepItem->setPath(stepPath);
-        stepItem->setPen(QPen(Qt::NoPen));
-        if (i % 4 == 0) {
-            stepItem->setBrush(QBrush(stepHighlightedColor));
-        } else {
-            stepItem->setBrush(QBrush(stepColor));
-        }
+        (new RoundaboutTestSegmentItem(stepInnerRect, stepOuterRect, stepAngle, this))->rotate(stepAngle * i);
     }
-//    // add a number in the center:
-//    QGraphicsSimpleTextItem *textItem = new QGraphicsSimpleTextItem("4/4", this);
-//    QFont textFont = textItem->font();
-//    textItem->setBrush(QBrush(Qt::white));
-//    textFont.setPointSize(36);
-//    textItem->setFont(textFont);
-//    // center it on the center circle:
-//    textItem->setPos(-0.5 * textItem->boundingRect().width(), -0.5 * textItem->boundingRect().height());
+    // create arrows:
+    QRectF arrowOuterRect = rect();
+    QRectF arrowInnerRect = 0.85 * rect();
+    qreal arrowAngle = 12;
+    qreal arrowTipOffset = 5;
+    for (unsigned int i = 0; i < 1; i++) {
+        (new RoundaboutTestArrowItem(arrowInnerRect, arrowOuterRect, arrowAngle, arrowTipOffset, this))->rotate(arrowAngle * i);
+    }
 }
