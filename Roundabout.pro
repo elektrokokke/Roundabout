@@ -11,9 +11,11 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        roundabout.cpp
+        roundabout.cpp \
+    roundaboutscene.cpp
 
-HEADERS  += roundabout.h
+HEADERS  += roundabout.h \
+    roundaboutscene.h
 
 FORMS    += roundabout.ui
 
