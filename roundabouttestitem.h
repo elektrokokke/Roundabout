@@ -52,6 +52,23 @@ private:
     QColor normalColor;
 };
 
+class RoundaboutTestKeyItem : public QGraphicsPathItem
+{
+public:
+    RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal angle, QColor color, QColor highlightedColor, QGraphicsItem *parent = 0);
+protected:
+    virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
+    virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
+private:
+    QColor normalColor, highlightedColor;
+};
+
+class RoundaboutTestKeyboardItem : public QGraphicsPathItem
+{
+public:
+    RoundaboutTestKeyboardItem(QRectF innerRect, QRectF outerRect, qreal angle, QGraphicsItem *parent = 0);
+};
+
 class RoundaboutTestItem : public QGraphicsEllipseItem
 {
 public:
