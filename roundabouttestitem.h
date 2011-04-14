@@ -47,19 +47,48 @@ private:
     QColor normalColor;
 };
 
-class RoundaboutTestSegmentItem : public QGraphicsPathItem
+class RoundaboutTestButtonItem : public QObject, public QGraphicsPathItem
 {
+    Q_OBJECT
 public:
-    RoundaboutTestSegmentItem(QRectF innerRect, QRectF outerRect, qreal angle, QGraphicsItem *parent = 0);
-    void setHighlight(bool highlight);
-    bool getState() const;
+    RoundaboutTestButtonItem(const QPainterPath &innerPath, QGraphicsItem *parent = 0);
+    RoundaboutTestButtonItem(QRectF rect, QGraphicsItem *parent = 0);
+signals:
+    void triggered();
 protected:
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
 private:
+    QColor normalColor, hoverColor;
+    bool hover;
+};
+
+class RoundaboutTestSegmentItem : public QGraphicsPathItem
+{
+public:
+    enum Shape {
+        NORMAL,
+        BENT_AT_BEGIN,
+        BENT_AT_END
+    };
+    RoundaboutTestSegmentItem(QRectF innerRect, QRectF outerRect, qreal angle, QGraphicsItem *parent = 0);
+    void setHighlight(bool highlight);
+    bool getState() const;
+    void setShape(Shape shape);
+    void changeShape();
+protected:
+    virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
+    virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
+    virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
+    virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent * event);
+private:
+    QRectF innerRect, outerRect;
+    qreal angle;
+    Shape myShape;
     QColor normalColor, highlightedColor, stateColor;
     bool state, hover, highlight;
+    RoundaboutTestButtonItem *button;
 };
 
 class RoundaboutTestArrowItem : public QGraphicsPathItem
@@ -100,6 +129,7 @@ protected:
 private:
     QGraphicsPathItem *child;
     bool hover;
+    qreal baseOpacity;
     QVector<RoundaboutTestKeyItem*> keyItems;
 };
 
@@ -115,6 +145,7 @@ private:
     RoundaboutTestArrowItem *arrowItem;
     QVector<RoundaboutTestSegmentItem*> segmentItems;
     QVector<RoundaboutTestKeyboardItem*> keyboardItems;
+    qreal bpm;
 
     void enterStep(int step);
     void leaveStep(int step);
