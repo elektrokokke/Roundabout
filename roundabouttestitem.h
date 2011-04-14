@@ -35,8 +35,9 @@ protected:
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
 private:
-    QColor normalColor, hoverColor, playingColor;
+    QColor normalColor, hoverColor;
     bool state, hover;
+    QPainterPath playPath, pausePath;
 };
 
 class RoundaboutTestCenterItem : public QGraphicsEllipseItem

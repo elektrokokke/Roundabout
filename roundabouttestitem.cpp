@@ -52,32 +52,36 @@ QColor mix(QColor c1, QColor c2, double weight1, double weight2)
 
 RoundaboutTestPlayItem::RoundaboutTestPlayItem(QRectF rect, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
-    normalColor("lightsteelblue"),
-    hoverColor("steelblue"),
-    playingColor("orangered"),
+    normalColor("steelblue"),
+    hoverColor("lightsteelblue"),
     state(false),
     hover(false)
 {
     setPen(QPen(QBrush(Qt::white), 3));
-    setBrush(QBrush(normalColor));
     setAcceptHoverEvents(true);
-    QPainterPath path(rect.topLeft());
-    path.lineTo(rect.right(), rect.center().y());
-    path.lineTo(rect.bottomLeft());
-    path.closeSubpath();
-    setPath(path);
+
+    playPath.moveTo(rect.x() + rect.width() * 0.25, rect.y());
+    playPath.lineTo(rect.right(), rect.center().y());
+    playPath.lineTo(rect.x() + rect.width() * 0.25, rect.bottom());
+    playPath.closeSubpath();
+
+    pausePath.addRect(rect.x(), rect.y(), rect.width() * 0.3, rect.height());
+    pausePath.addRect(rect.x() + rect.width() * 0.7, rect.y(), rect.width() * 0.3, rect.height());
+
+    setBrush(QBrush(hover ? hoverColor : normalColor));
+    setPath(state ? pausePath : playPath);
 }
 
 void RoundaboutTestPlayItem::hoverEnterEvent(QGraphicsSceneHoverEvent * event)
 {
     hover = true;
-    setBrush(QBrush(state ? playingColor : hover ? hoverColor : normalColor));
+    setBrush(QBrush(hover ? hoverColor : normalColor));
 }
 
 void RoundaboutTestPlayItem::hoverLeaveEvent(QGraphicsSceneHoverEvent * event)
 {
     hover = false;
-    setBrush(QBrush(state ? playingColor : hover ? hoverColor : normalColor));
+    setBrush(QBrush(hover ? hoverColor : normalColor));
 }
 
 
@@ -85,7 +89,7 @@ void RoundaboutTestPlayItem::mousePressEvent(QGraphicsSceneMouseEvent * event)
 {
     event->accept();
     state = !state;
-    setBrush(QBrush(state ? playingColor : hover ? hoverColor : normalColor));
+    setPath(state ? pausePath : playPath);
     changedState(state);
 }
 
@@ -492,7 +496,6 @@ RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent) :
     new RoundaboutTestCenterItem(centerRect, this);
     // create a play "button":
     QRectF playRect = 0.3 * centerRect;
-    playRect.translate(playRect.width() / 6.0, 0);
     RoundaboutTestPlayItem *playItem = new RoundaboutTestPlayItem(playRect, this);
     // create a circle segment for each step:
     QRectF stepOuterRect = rect();
@@ -503,7 +506,7 @@ RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent) :
     QColor keybordBackgroundColor(mix(QColor("lightsteelblue"), QColor(Qt::white), 1, 1));
     for (int i = 0; i < steps; i++) {
         RoundaboutTestSegmentItem *segmentItem = new RoundaboutTestSegmentItem(stepInnerRect, stepOuterRect, stepAngle, this);
-        segmentItem->setRotation(-90 + stepAngle * i);
+        segmentItem->setRotation(-90 - 0.5 * stepAngle + stepAngle * i);
         segmentItems.append(segmentItem);
         RoundaboutTestKeyboardItem *keyboardItem;
         if (i < steps / 2) {
@@ -511,7 +514,7 @@ RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent) :
         } else {
             keyboardItem = new RoundaboutTestKeyboardItem(keyboardInnerRect, keyboardOuterRect, RoundaboutTestKeyboardItem::OUTER_TO_INNER, stepAngle, keybordBackgroundColor, this);
         }
-        keyboardItem->setRotation(-90 + stepAngle * i);
+        keyboardItem->setRotation(-90 - 0.5 * stepAngle + stepAngle * i);
         keyboardItems.append(keyboardItem);
     }
     // create arrow:
@@ -520,7 +523,7 @@ RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent) :
     qreal arrowAngle = 12;
     qreal arrowTipOffset = 5;
     arrowItem = new RoundaboutTestArrowItem(arrowInnerRect, arrowOuterRect, arrowAngle, arrowTipOffset, this);
-    arrowItem->setRotation(-90);
+    arrowItem->setRotation(-90 - 0.5 * stepAngle);
 
     timer.setInterval(20);
     QObject::connect(&timer, SIGNAL(timeout()), this, SLOT(onTimer()));
@@ -543,7 +546,7 @@ void RoundaboutTestItem::leaveStep(int step)
 
 void RoundaboutTestItem::changeState(bool play)
 {
-    qreal angle = arrowItem->rotation() + 90;
+    qreal angle = arrowItem->rotation() + 90 + 0.5 * stepAngle;
     if (angle < 0) {
         angle += 360;
     }
@@ -563,7 +566,7 @@ void RoundaboutTestItem::changeState(bool play)
 
 void RoundaboutTestItem::onTimer()
 {
-    qreal angle = arrowItem->rotation() + 90;
+    qreal angle = arrowItem->rotation() + 90 + 0.5 * stepAngle;
     if (angle < 0) {
         angle += 360;
     }
@@ -573,7 +576,7 @@ void RoundaboutTestItem::onTimer()
         angle -= 360;
     }
     int nextStep = (int)(angle / stepAngle) % steps;
-    arrowItem->setRotation(angle - 90);
+    arrowItem->setRotation(angle - 90 - 0.5 * stepAngle);
     if (previousStep != nextStep) {
         leaveStep(previousStep);
         enterStep(nextStep);
