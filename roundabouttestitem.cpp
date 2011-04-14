@@ -46,11 +46,14 @@ QColor mix(QColor c1, QColor c2, double weight1, double weight2)
 RoundaboutTestPlayItem::RoundaboutTestPlayItem(QRectF rect, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
     normalColor("lightsteelblue"),
-    highlightedColor("orangered"),
-    state(false)
+    hoverColor("steelblue"),
+    playingColor("orangered"),
+    state(false),
+    hover(false)
 {
     setPen(QPen(QBrush(Qt::white), 3));
     setBrush(QBrush(normalColor));
+    setAcceptHoverEvents(true);
     QPainterPath path(rect.topLeft());
     path.lineTo(rect.right(), rect.center().y());
     path.lineTo(rect.bottomLeft());
@@ -58,10 +61,23 @@ RoundaboutTestPlayItem::RoundaboutTestPlayItem(QRectF rect, QGraphicsItem *paren
     setPath(path);
 }
 
+void RoundaboutTestPlayItem::hoverEnterEvent(QGraphicsSceneHoverEvent * event)
+{
+    hover = true;
+    setBrush(QBrush(state ? playingColor : hover ? hoverColor : normalColor));
+}
+
+void RoundaboutTestPlayItem::hoverLeaveEvent(QGraphicsSceneHoverEvent * event)
+{
+    hover = false;
+    setBrush(QBrush(state ? playingColor : hover ? hoverColor : normalColor));
+}
+
+
 void RoundaboutTestPlayItem::mousePressEvent(QGraphicsSceneMouseEvent * event)
 {
     state = !state;
-    setBrush(QBrush(state ? highlightedColor : normalColor));
+    setBrush(QBrush(state ? playingColor : hover ? hoverColor : normalColor));
     changedState(state);
 }
 
@@ -76,13 +92,14 @@ RoundaboutTestCenterItem::RoundaboutTestCenterItem(QRectF rect, QGraphicsItem *p
 RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(QRectF innerRect, QRectF outerRect, qreal angle, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
     normalColor("lightsteelblue"),
-    highlightedColor("steelblue"),
-    state(false),
+    highlightedColor(Qt::white),
+    stateColor("steelblue"),
+    state(true),
     hover(false),
     highlight(false)
 {
     setPen(QPen(QBrush(Qt::white), 3));
-    setBrush(QBrush(normalColor));
+    setHighlight(false);
     setAcceptHoverEvents(true);
     QPainterPath path;
     path.arcMoveTo(innerRect, -angle);
@@ -98,7 +115,15 @@ RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(QRectF innerRect, QRectF ou
 void RoundaboutTestSegmentItem::setHighlight(bool highlight)
 {
     this->highlight = highlight;
-    setBrush(QBrush(state == (highlight || hover) ? normalColor : highlightedColor));
+    if ((hover || highlight) && state) {
+        setBrush(QBrush(mix(stateColor, highlightedColor, 1, 3)));
+    } else if (hover) {
+        setBrush(QBrush(highlightedColor));
+    } else if (state) {
+        setBrush(QBrush(stateColor));
+    } else {
+        setBrush(QBrush(normalColor));
+    }
 }
 
 bool RoundaboutTestSegmentItem::getState() const
@@ -149,10 +174,10 @@ RoundaboutTestArrowItem::RoundaboutTestArrowItem(QRectF innerRect, QRectF outerR
     setPath(path);
 }
 
-RoundaboutTestKeyItem::RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal angle, QColor color, QColor highlightedColor_, QColor stateColor_, QGraphicsItem *parent) :
+RoundaboutTestKeyItem::RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal angle, QColor color, QColor stateColor_, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
     normalColor(color),
-    highlightedColor(highlightedColor_),
+    highlightedColor(Qt::white),
     stateColor(stateColor_),
     state(false),
     hover(false),
@@ -163,12 +188,12 @@ RoundaboutTestKeyItem::RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect,
     setFlag(QGraphicsItem::ItemIgnoresParentOpacity, state);
     setAcceptHoverEvents(true);
     QPainterPath path;
-    path.arcMoveTo(innerRect, -angle);
+    path.arcMoveTo(innerRect, -(startAngle + angle));
     QPointF innerPos = path.currentPosition();
-    path.arcMoveTo(outerRect, 0);
-    path.arcTo(outerRect, 0, -angle);
+    path.arcMoveTo(outerRect, -startAngle);
+    path.arcTo(outerRect, -startAngle, -angle);
     path.lineTo(innerPos);
-    path.arcTo(innerRect, -angle, angle);
+    path.arcTo(innerRect, -(startAngle + angle), angle);
     path.closeSubpath();
     setPath(path);
 }
@@ -176,7 +201,9 @@ RoundaboutTestKeyItem::RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect,
 void RoundaboutTestKeyItem::setHighlight(bool highlight)
 {
     this->highlight = highlight;
-    if ((highlight && state) || hover) {
+    if ((hover || highlight) && state) {
+        setBrush(QBrush(mix(stateColor, highlightedColor, 1, 3)));
+    } else if (hover) {
         setBrush(QBrush(highlightedColor));
     } else if (state) {
         setBrush(QBrush(stateColor));
@@ -239,7 +266,7 @@ RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(QRectF innerRect, QRectF 
         }
         QRectF outerKeyRect = (1.0 - from) * innerRect + from * outerRect;
         QRectF innerKeyRect = (1.0 - to) * innerRect + to * outerRect;
-        RoundaboutTestKeyItem *keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, angle, QColor("lightsteelblue"), QColor("white"), QColor("steelblue"), child);
+        RoundaboutTestKeyItem *keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, 0, angle, QColor("lightsteelblue"),QColor("steelblue"), child);
         path |= keyItem->path();
         keyItems.append(keyItem);
     }
@@ -261,9 +288,15 @@ RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(QRectF innerRect, QRectF 
         }
         QRectF outerKeyRect = (1.0 - from) * innerRect + from * outerRect;
         QRectF innerKeyRect = (1.0 - to) * innerRect + to * outerRect;
-        RoundaboutTestKeyItem *keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, blackKeyAngle, QColor("steelblue"), QColor("white"), QColor("black"), child);
-        if (dir == OUTER_TO_INNER) {
-            keyItem->rotate(angle - blackKeyAngle);
+        RoundaboutTestKeyItem *keyItem;
+        if (dir == INNER_TO_OUTER) {
+            keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, 0, blackKeyAngle, QColor("steelblue"), QColor("black"), child);
+        } else {
+            keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, angle - blackKeyAngle, blackKeyAngle, QColor("steelblue"), QColor("black"), child);
+        }
+        for (int j = 0; j < keys; j++) {
+            QPainterPath keyPath = keyItems[j]->path() - keyItem->path();
+            keyItems[j]->setPath(keyPath);
         }
         path |= keyItem->path();
         keyItems.append(keyItem);

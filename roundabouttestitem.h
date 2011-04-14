@@ -31,10 +31,12 @@ public:
 signals:
     void changedState(bool playing);
 protected:
+    virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
+    virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
 private:
-    QColor normalColor, highlightedColor;
-    bool state;
+    QColor normalColor, hoverColor, playingColor;
+    bool state, hover;
 };
 
 class RoundaboutTestCenterItem : public QGraphicsEllipseItem
@@ -56,7 +58,7 @@ protected:
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
 private:
-    QColor normalColor, highlightedColor;
+    QColor normalColor, highlightedColor, stateColor;
     bool state, hover, highlight;
 };
 
@@ -72,7 +74,7 @@ private:
 class RoundaboutTestKeyItem : public QGraphicsPathItem
 {
 public:
-    RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal angle, QColor color, QColor highlightedColor, QColor stateColor, QGraphicsItem *parent = 0);
+    RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal angle, QColor color, QColor stateColor, QGraphicsItem *parent = 0);
     void setHighlight(bool highlight);
 protected:
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
