@@ -224,8 +224,7 @@ RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(QRectF innerRect_, QRectF o
     stateColor("steelblue"),
     state(true),
     hover(false),
-    highlight(false),
-    button(0)
+    highlight(false)
 {
     Q_ASSERT(innerRect.width() == innerRect.height());
     Q_ASSERT(outerRect.width() == outerRect.height());
@@ -233,6 +232,61 @@ RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(QRectF innerRect_, QRectF o
     setPen(QPen(QBrush(Qt::white), 3));
     setHighlight(false);
     setAcceptHoverEvents(true);
+
+    {
+        normalPath.arcMoveTo(innerRect, -angle);
+        QPointF innerPos = normalPath.currentPosition();
+        normalPath.arcMoveTo(outerRect, 0);
+        normalPath.arcTo(outerRect, 0, -angle);
+        normalPath.lineTo(innerPos);
+        normalPath.arcTo(innerRect, -angle, angle);
+        normalPath.closeSubpath();
+    }
+    {
+        endPath.arcMoveTo(outerRect, 0);
+        QPointF p1 = endPath.currentPosition();
+        endPath.arcMoveTo(outerRect, -angle);
+        QPointF p2 = endPath.currentPosition();
+        QPointF diff = p2 - p1;
+        qreal angleBent = 45.0 - angle;
+        qreal outerRadius = diff.y() / tan(angleBent * M_PI / 180.0) - diff.x();
+        qreal innerRadius = outerRadius - 0.5 * (outerRect.width() - innerRect.width());
+        QPointF centerOffset(outerRect.right() - outerRect.center().x() + innerRadius, 0);
+        QPointF centerBent = outerRect.center() + centerOffset;
+        QRectF innerRectBent(centerBent.x() - innerRadius, centerBent.y() - innerRadius, innerRadius * 2, innerRadius * 2);
+        QRectF outerRectBent(centerBent.x() - outerRadius, centerBent.y() - outerRadius, outerRadius * 2, outerRadius * 2);
+        endPath.arcMoveTo(innerRectBent, 180.0 + angleBent);
+        QPointF innerPos = endPath.currentPosition();
+        endPath.arcMoveTo(outerRectBent, 180.0);
+        endPath.arcTo(outerRectBent, 180.0, angleBent);
+        endPath.lineTo(innerPos);
+        endPath.arcTo(innerRectBent, 180.0 + angleBent, -angleBent);
+        endPath.closeSubpath();
+        endPath |= normalPath;
+    }
+    {
+        beginPath.arcMoveTo(outerRect, 0);
+        QPointF p1 = beginPath.currentPosition();
+        beginPath.arcMoveTo(outerRect, -angle);
+        QPointF p2 = beginPath.currentPosition();
+        QPointF diff = p2 - p1;
+        qreal angleBent = 45.0 - angle;
+        qreal outerRadius = diff.y() / tan(angleBent * M_PI / 180.0) - diff.x();
+        qreal innerRadius = outerRadius - 0.5 * (outerRect.width() - innerRect.width());
+        QPointF centerOffset(outerRect.right() - outerRect.center().x() + innerRadius, 0);
+        QPointF centerBent = outerRect.center() + ::rotate(centerOffset, angle);
+        QRectF innerRectBent(centerBent.x() - innerRadius, centerBent.y() - innerRadius, innerRadius * 2, innerRadius * 2);
+        QRectF outerRectBent(centerBent.x() - outerRadius, centerBent.y() - outerRadius, outerRadius * 2, outerRadius * 2);
+        beginPath.arcMoveTo(innerRectBent, 180.0 - angleBent);
+        QPointF innerPos = beginPath.currentPosition();
+        beginPath.arcMoveTo(outerRectBent, 180.0 - 2 * angleBent);
+        beginPath.arcTo(outerRectBent, 180.0 - 2 * angleBent, angleBent);
+        beginPath.lineTo(innerPos);
+        beginPath.arcTo(innerRectBent, 180.0 - angleBent, -angleBent);
+        beginPath.closeSubpath();
+        beginPath |= normalPath;
+    }
+
     setShape(NORMAL);
 }
 
@@ -260,68 +314,12 @@ void RoundaboutTestSegmentItem::setShape(Shape shape)
     if (myShape != shape) {
         myShape = shape;
         if (shape == NORMAL) {
-            QPainterPath path;
-            path.arcMoveTo(innerRect, -angle);
-            QPointF innerPos = path.currentPosition();
-            path.arcMoveTo(outerRect, 0);
-            path.arcTo(outerRect, 0, -angle);
-            path.lineTo(innerPos);
-            path.arcTo(innerRect, -angle, angle);
-            path.closeSubpath();
-            setPath(path);
+            setPath(normalPath);
         } else if (shape == BENT_AT_END) {
-            QPainterPath path;
-            path.arcMoveTo(outerRect, 0);
-            QPointF p1 = path.currentPosition();
-            path.arcMoveTo(outerRect, -angle);
-            QPointF p2 = path.currentPosition();
-            QPointF diff = p2 - p1;
-            qreal angleBent = 45.0 - angle;
-            qreal outerRadius = diff.y() / tan(angleBent * M_PI / 180.0) - diff.x();
-            qreal innerRadius = outerRadius - 0.5 * (outerRect.width() - innerRect.width());
-            QPointF centerOffset(outerRect.right() - outerRect.center().x() + innerRadius, 0);
-            QPointF centerBent = outerRect.center() + centerOffset;
-            QRectF innerRectBent(centerBent.x() - innerRadius, centerBent.y() - innerRadius, innerRadius * 2, innerRadius * 2);
-            QRectF outerRectBent(centerBent.x() - outerRadius, centerBent.y() - outerRadius, outerRadius * 2, outerRadius * 2);
-
-            path.arcMoveTo(innerRectBent, 180.0 + angleBent);
-            QPointF innerPos = path.currentPosition();
-            path.arcMoveTo(outerRectBent, 180.0);
-            path.arcTo(outerRectBent, 180.0, angleBent);
-            path.lineTo(innerPos);
-            path.arcTo(innerRectBent, 180.0 + angleBent, -angleBent);
-            path.closeSubpath();
-            setPath(path);
-
-            path.closeSubpath();
-            setPath(path);
+            setPath(endPath);
         } else {
             // shape == BENT_AT_BEGIN
-            QPainterPath path;
-            path.arcMoveTo(outerRect, 0);
-            QPointF p1 = path.currentPosition();
-            path.arcMoveTo(outerRect, -angle);
-            QPointF p2 = path.currentPosition();
-            QPointF diff = p2 - p1;
-            qreal angleBent = 45.0 - angle;
-            qreal outerRadius = diff.y() / tan(angleBent * M_PI / 180.0) - diff.x();
-            qreal innerRadius = outerRadius - 0.5 * (outerRect.width() - innerRect.width());
-            QPointF centerOffset(outerRect.right() - outerRect.center().x() + innerRadius, 0);
-            QPointF centerBent = outerRect.center() + ::rotate(centerOffset, angle);
-            QRectF innerRectBent(centerBent.x() - innerRadius, centerBent.y() - innerRadius, innerRadius * 2, innerRadius * 2);
-            QRectF outerRectBent(centerBent.x() - outerRadius, centerBent.y() - outerRadius, outerRadius * 2, outerRadius * 2);
-
-            path.arcMoveTo(innerRectBent, 180.0 - angleBent);
-            QPointF innerPos = path.currentPosition();
-            path.arcMoveTo(outerRectBent, 180.0 - 2 * angleBent);
-            path.arcTo(outerRectBent, 180.0 - 2 * angleBent, angleBent);
-            path.lineTo(innerPos);
-            path.arcTo(innerRectBent, 180.0 - angleBent, -angleBent);
-            path.closeSubpath();
-            setPath(path);
-
-            path.closeSubpath();
-            setPath(path);
+            setPath(beginPath);
         }
     }
 }

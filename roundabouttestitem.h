@@ -99,7 +99,7 @@ private:
     Shape myShape;
     QColor normalColor, highlightedColor, stateColor;
     bool state, hover, highlight;
-    RoundaboutTestButtonItem *button;
+    QPainterPath normalPath, beginPath, endPath;
 };
 
 class RoundaboutTestArrowItem : public QGraphicsPathItem
