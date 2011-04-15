@@ -48,6 +48,16 @@ private:
     QColor normalColor;
 };
 
+class RoundaboutTestDragItem : public QGraphicsPathItem
+{
+public:
+    RoundaboutTestDragItem(QGraphicsItem *parent = 0);
+protected:
+    virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
+    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
+    virtual void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
+};
+
 class RoundaboutTestButtonItem : public QObject, public QGraphicsPathItem
 {
     Q_OBJECT
@@ -106,13 +116,14 @@ class RoundaboutTestKeyItem : public QGraphicsPathItem
 public:
     RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal angle, QColor color, QColor stateColor, QGraphicsItem *parent = 0);
     void setHighlight(bool highlight);
+    void setLowkey(bool lowkey);
 protected:
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
 private:
-    QColor normalColor, highlightedColor, stateColor;
-    bool state, hover, highlight;
+    QColor normalColor, highlightedColor, stateColor, lowkeyColor;
+    bool state, hover, highlight, lowkey;
 };
 
 class RoundaboutTestKeyboardItem : public QGraphicsPathItem
@@ -122,16 +133,28 @@ public:
         INNER_TO_OUTER,
         OUTER_TO_INNER
     };
-    RoundaboutTestKeyboardItem(QRectF innerRect, QRectF outerRect, Direction dir, qreal angle, QColor color, QGraphicsItem *parent = 0);
+    RoundaboutTestKeyboardItem(QRectF innerRect, QRectF outerRect, Direction dir, qreal angle, QGraphicsItem *parent = 0);
     void setHighlight(bool highlight);
+    void setLowkey(bool lowkey);
+private:
+    QVector<RoundaboutTestKeyItem*> keyItems;
+};
+
+class RoundaboutTestSliceItem : public QGraphicsPathItem
+{
+public:
+    RoundaboutTestSliceItem(QRectF innerRect, QRectF outerRect, RoundaboutTestKeyboardItem::Direction dir, qreal angle, QGraphicsItem *parent = 0);
+    void setHighlight(bool highlight);
+    RoundaboutTestKeyboardItem *getKeyboardItem();
 protected:
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
 private:
-    QGraphicsPathItem *child;
-    bool hover;
-    qreal baseOpacity;
-    QVector<RoundaboutTestKeyItem*> keyItems;
+    QColor normalColor;
+    QPainterPath normalShape, extendedShape;
+    RoundaboutTestKeyboardItem *keyboardItem;
+    RoundaboutTestSegmentItem *segmentItem;
+//    RoundaboutTestDragItem *dragItem;
 };
 
 class RoundaboutTestItem : public QObject, public QGraphicsEllipseItem
@@ -139,13 +162,15 @@ class RoundaboutTestItem : public QObject, public QGraphicsEllipseItem
     Q_OBJECT
 public:
     RoundaboutTestItem(QGraphicsItem *parent = 0);
+protected:
+    virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
+    virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
 private:
     int steps;
     QTimer timer;
-    qreal stepAngle;
+    qreal sliceAngle;
     RoundaboutTestArrowItem *arrowItem;
-    QVector<RoundaboutTestSegmentItem*> segmentItems;
-    QVector<RoundaboutTestKeyboardItem*> keyboardItems;
+    QVector<RoundaboutTestSliceItem*> sliceItems;
     qreal bpm;
 
     void enterStep(int step);
