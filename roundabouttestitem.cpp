@@ -43,8 +43,9 @@ QRectF operator+(const QRectF &r1, const QRectF &r2)
 
 QPointF rotate(QPointF p, qreal angle)
 {
-    qreal radians = angle * M_PI / 180.0;
-    return QPointF(p.x() * cos(radians) - p.y() * sin(radians), p.x() * sin(radians) + p.y() * cos(radians));
+    QLineF line(QPointF(0, 0), p);
+    line.setAngle(line.angle() - angle);
+    return line.p2();
 }
 
 QColor mixColors(QColor c1, QColor c2, double weight1, double weight2)
@@ -224,6 +225,103 @@ void RoundaboutTestButtonItem::mousePressEvent(QGraphicsSceneMouseEvent * event)
 {
     event->accept();
     triggered();
+}
+
+RoundaboutTestConnectionItem::RoundaboutTestConnectionItem(qreal width_, QGraphicsItem *parent) :
+    QGraphicsPathItem(parent),
+    angle1(0),
+    angle2(0),
+    width(width_)
+{
+    setPen(QPen(QBrush(QColor("steelblue")), width));
+    setBrush(QBrush(Qt::NoBrush));
+}
+
+void RoundaboutTestConnectionItem::setPoint1(QPointF p, qreal angle)
+{
+    if ((p != p1) || (angle != angle1)) {
+        p1 = p;
+        angle1 = angle;
+        setPath(createConnectionPath(p1, angle1, p2, angle2));
+    }
+}
+
+void RoundaboutTestConnectionItem::setPoint2(QPointF p, qreal angle)
+{
+    if ((p != p2) || (angle != angle2)) {
+        p2 = p;
+        angle2 = angle;
+        setPath(createConnectionPath(p1, angle1, p2, angle2));
+    }
+}
+
+void RoundaboutTestConnectionItem::setPoint(Point point, QPointF p, qreal angle)
+{
+    if (point == P1) {
+        setPoint1(p, angle);
+    } else {
+        setPoint2(p, angle);
+    }
+}
+
+QPainterPath RoundaboutTestConnectionItem::createConnectionPath(QPointF a, qreal aAngle, QPointF b, qreal bAngle)
+{
+    QLineF line(a, b);
+    qreal radius = 100;
+    if (radius * 4 > line.length()) {
+        radius = 0.25 * line.length();
+    }
+    qreal angleAToB = -line.angle() - aAngle;
+    for (; angleAToB >= 360; angleAToB -= 360);
+    for (; angleAToB < 0; angleAToB += 360);
+    bool bRightFromA = (angleAToB <= 180);
+    QPointF aCenter = a + ::rotate(QPointF(radius, 0), aAngle + (bRightFromA ? 90 : -90));
+    qreal angleBToA = 180 - line.angle() - bAngle;
+    for (; angleBToA >= 360; angleBToA -= 360);
+    for (; angleBToA < 0; angleBToA += 360);
+    bool aRightFromB = (angleBToA <= 180);
+    QPointF bCenter = b + ::rotate(QPointF(radius, 0), bAngle + (aRightFromB ? 90 : -90));
+    QRectF aRect(aCenter.x() - radius, aCenter.y() - radius, radius * 2, radius * 2);
+    QRectF bRect(bCenter.x() - radius, bCenter.y() - radius, radius * 2, radius * 2);
+    QLineF aCenterToBCenter(aCenter, bCenter);
+    qreal angle;
+    if (bRightFromA == aRightFromB) {
+        angle = -acos(radius / aCenterToBCenter.length() * 2) * 180.0 / M_PI;
+        if (bRightFromA) {
+            angle = -angle;
+        }
+    } else {
+        angle = -90;
+        if (bRightFromA) {
+            angle = -angle;
+        }
+    }
+    QLineF unit = aCenterToBCenter.unitVector();
+    QPointF tangentOffset = ::rotate(radius * (unit.p2() - unit.p1()), -angle);
+    QPointF aTangent = aCenter + tangentOffset;
+    QPointF bTangent = bCenter + (bRightFromA == aRightFromB ? -tangentOffset : tangentOffset);
+    QLineF aStart(aCenter, a);
+    QLineF aEnd(aCenter, aTangent);
+    QLineF bStart(bCenter, b);
+    QLineF bEnd(bCenter, bTangent);
+    QPainterPath path;
+    path.moveTo(a);
+    qreal aArcLength = aEnd.angle() - aStart.angle();
+    if (bRightFromA) {
+        for (; aArcLength > 0; aArcLength -= 360);
+    } else {
+        for (; aArcLength < 0; aArcLength += 360);
+    }
+    qreal bArcLength = bStart.angle() - bEnd.angle();
+    if (aRightFromB) {
+        for (; bArcLength < 0; bArcLength += 360);
+    } else {
+        for (; bArcLength > 0; bArcLength -= 360);
+    }
+    path.arcTo(aRect, aStart.angle(), aArcLength);
+    path.lineTo(bTangent);
+    path.arcTo(bRect, bEnd.angle(), bArcLength);
+    return path;
 }
 
 RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, QGraphicsItem *parent) :
@@ -540,9 +638,11 @@ RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent) :
     QGraphicsEllipseItem(-200, -200, 400, 400, parent),
     steps(16),
     sliceAngle(360.0 / steps),
-    bpm(120)
+    bpm(120),
+    connectionItem(0)
 {
     setFlag(QGraphicsItem::ItemIsMovable);
+    setFlag(QGraphicsItem::ItemSendsGeometryChanges);
     setPen(QPen(Qt::NoPen));
     setBrush(QBrush(Qt::NoBrush));
     setAcceptHoverEvents(true);
@@ -567,6 +667,17 @@ RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent) :
     QObject::connect(playItem, SIGNAL(changedState(bool)), this, SLOT(changeState(bool)));
 }
 
+void RoundaboutTestItem::setConnectionItem(RoundaboutTestConnectionItem *connectionItem, RoundaboutTestConnectionItem::Point point)
+{
+    this->connectionItem = connectionItem;
+    this->point = point;
+    if (point == RoundaboutTestConnectionItem::P1) {
+        connectionItem->setPoint(point, QPointF(rect().center().x() - 33, rect().top() - 44) + scenePos(), 270);
+    } else {
+        connectionItem->setPoint(point, QPointF(rect().center().x() - 33, rect().bottom() + 44) + scenePos(), 90);
+    }
+}
+
 void RoundaboutTestItem::hoverEnterEvent(QGraphicsSceneHoverEvent * event)
 {
     for (int i = 0; i < sliceItems.size(); i++) {
@@ -579,6 +690,20 @@ void RoundaboutTestItem::hoverLeaveEvent(QGraphicsSceneHoverEvent * event)
     for (int i = 0; i < sliceItems.size(); i++) {
         sliceItems[i]->getKeyboardItem()->setOpacity(0);
     }
+}
+
+QVariant RoundaboutTestItem::itemChange(GraphicsItemChange change, const QVariant & value)
+{
+    if (change == QGraphicsItem::ItemPositionHasChanged) {
+        if (connectionItem) {
+            if (point == RoundaboutTestConnectionItem::P1) {
+                connectionItem->setPoint(point, QPointF(rect().center().x() - 33, rect().top() - 44) + scenePos(), 270);
+            } else {
+                connectionItem->setPoint(point, QPointF(rect().center().x() - 33, rect().bottom() + 44) + scenePos(), 90);
+            }
+        }
+    }
+    return QGraphicsEllipseItem::itemChange(change, value);
 }
 
 void RoundaboutTestItem::enterStep(int step)

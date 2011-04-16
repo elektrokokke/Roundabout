@@ -75,6 +75,23 @@ private:
     bool hover;
 };
 
+class RoundaboutTestConnectionItem : public QGraphicsPathItem
+{
+public:
+    enum Point {
+        P1,
+        P2
+    };
+    RoundaboutTestConnectionItem(qreal width, QGraphicsItem *parent = 0);
+    void setPoint1(QPointF p, qreal angle);
+    void setPoint2(QPointF p, qreal angle);
+    void setPoint(Point point, QPointF p, qreal angle);
+private:
+    QPointF p1, p2;
+    qreal angle1, angle2, width;
+    static QPainterPath createConnectionPath(QPointF a, qreal aAngle, QPointF b, qreal bAngle);
+};
+
 class RoundaboutTestSegmentItem : public QGraphicsPathItem
 {
 public:
@@ -159,9 +176,11 @@ class RoundaboutTestItem : public QObject, public QGraphicsEllipseItem
     Q_OBJECT
 public:
     RoundaboutTestItem(QGraphicsItem *parent = 0);
+    void setConnectionItem(RoundaboutTestConnectionItem *connectionItem, RoundaboutTestConnectionItem::Point point);
 protected:
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
+    virtual QVariant itemChange(GraphicsItemChange change, const QVariant & value);
 private:
     int steps;
     QTimer timer;
@@ -169,6 +188,8 @@ private:
     RoundaboutTestArrowItem *arrowItem;
     QVector<RoundaboutTestSliceItem*> sliceItems;
     qreal bpm;
+    RoundaboutTestConnectionItem *connectionItem;
+    RoundaboutTestConnectionItem::Point point;
 
     void enterStep(int step);
     void leaveStep(int step);
