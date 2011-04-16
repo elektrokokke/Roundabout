@@ -30,15 +30,11 @@ Roundabout::Roundabout(QWidget *parent) :
     // display our RoundaboutScene in the graphics view:
     ui->graphicsView->setScene(&roundaboutScene);
     // add a test item to the scene:
-    RoundaboutTestConnectionItem *connectionItem = new RoundaboutTestConnectionItem(27);
     RoundaboutTestItem *testItem1 = new RoundaboutTestItem();
     RoundaboutTestItem *testItem2 = new RoundaboutTestItem();
     testItem2->setPos(testItem2->rect().width() + 56, 0);
-    roundaboutScene.addItem(connectionItem);
     roundaboutScene.addItem(testItem1);
     roundaboutScene.addItem(testItem2);
-    testItem1->setConnectionItem(connectionItem, RoundaboutTestConnectionItem::P1);
-    testItem2->setConnectionItem(connectionItem, RoundaboutTestConnectionItem::P2);
 }
 
 Roundabout::~Roundabout()

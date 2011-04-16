@@ -92,12 +92,28 @@ private:
     static QPainterPath createConnectionPath(QPointF a, qreal aAngle, QPointF b, qreal bAngle);
 };
 
+class RoundaboutTestSegmentItem;
+
+class RoundaboutTestSegmentHeadItem : public QGraphicsPathItem
+{
+public:
+    RoundaboutTestSegmentHeadItem(QColor color, QPointF anchor, qreal angle, QGraphicsItem *parent);
+    void beginMove();
+protected:
+    virtual void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
+    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
+private:
+    QColor color;
+    QPointF anchor;
+    qreal angle;
+    QGraphicsPathItem *pathItem;
+};
+
 class RoundaboutTestSegmentItem : public QGraphicsPathItem
 {
 public:
     enum Shape {
         NORMAL,
-        BENT,
         BENT_AT_BEGIN,
         BENT_AT_END
     };
@@ -105,17 +121,17 @@ public:
     void setHighlight(bool highlight);
     bool getState() const;
     void setShape(Shape shape);
-    void changeShape();
 protected:
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
-    virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent * event);
+    virtual void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
 private:
     Shape myShape;
     QColor normalColor, highlightedColor, stateColor;
     bool state, hover, highlight;
-    QPainterPath normalPath, bentPath, bentAtBeginPath, bentAtEndPath;
+    QPainterPath normalPath, bentAtBeginPath, bentAtEndPath;
+    RoundaboutTestSegmentHeadItem *headItem;
 };
 
 class RoundaboutTestArrowItem : public QGraphicsPathItem
@@ -176,11 +192,9 @@ class RoundaboutTestItem : public QObject, public QGraphicsEllipseItem
     Q_OBJECT
 public:
     RoundaboutTestItem(QGraphicsItem *parent = 0);
-    void setConnectionItem(RoundaboutTestConnectionItem *connectionItem, RoundaboutTestConnectionItem::Point point);
 protected:
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
-    virtual QVariant itemChange(GraphicsItemChange change, const QVariant & value);
 private:
     int steps;
     QTimer timer;
@@ -188,8 +202,6 @@ private:
     RoundaboutTestArrowItem *arrowItem;
     QVector<RoundaboutTestSliceItem*> sliceItems;
     qreal bpm;
-    RoundaboutTestConnectionItem *connectionItem;
-    RoundaboutTestConnectionItem::Point point;
 
     void enterStep(int step);
     void leaveStep(int step);
