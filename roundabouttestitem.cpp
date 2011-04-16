@@ -47,7 +47,7 @@ QPointF rotate(QPointF p, qreal angle)
     return QPointF(p.x() * cos(radians) - p.y() * sin(radians), p.x() * sin(radians) + p.y() * cos(radians));
 }
 
-QColor mix(QColor c1, QColor c2, double weight1, double weight2)
+QColor mixColors(QColor c1, QColor c2, double weight1, double weight2)
 {
     QColor mixed;
     qreal r1, g1, b1, r2, g2, b2;
@@ -55,6 +55,19 @@ QColor mix(QColor c1, QColor c2, double weight1, double weight2)
     c2.getRgbF(&r2, &g2, &b2);
     mixed.setRgbF((r1 * weight1 + r2 * weight2) / (weight1 + weight2), (g1 * weight1 + g2 * weight2) / (weight1 + weight2), (b1 * weight1 + b2 * weight2) / (weight1 + weight2));
     return mixed;
+}
+
+QPainterPath createSegmentPath(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength)
+{
+    QPainterPath path;
+    path.arcMoveTo(innerRect, -startAngle - arcLength);
+    QPointF innerPos = path.currentPosition();
+    path.arcMoveTo(outerRect, -startAngle);
+    path.arcTo(outerRect, -startAngle, -arcLength);
+    path.lineTo(innerPos);
+    path.arcTo(innerRect,- startAngle - arcLength, arcLength);
+    path.closeSubpath();
+    return path;
 }
 
 RoundaboutTestPlayItem::RoundaboutTestPlayItem(QRectF rect, QGraphicsItem *parent) :
@@ -213,11 +226,8 @@ void RoundaboutTestButtonItem::mousePressEvent(QGraphicsSceneMouseEvent * event)
     triggered();
 }
 
-RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(QRectF innerRect_, QRectF outerRect_, qreal angle_, QGraphicsItem *parent) :
+RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
-    innerRect(innerRect_),
-    outerRect(outerRect_),
-    angle(angle_),
     myShape(BENT_AT_BEGIN),
     normalColor("lightsteelblue"),
     highlightedColor(Qt::white),
@@ -226,66 +236,35 @@ RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(QRectF innerRect_, QRectF o
     hover(false),
     highlight(false)
 {
-    Q_ASSERT(innerRect.width() == innerRect.height());
     Q_ASSERT(outerRect.width() == outerRect.height());
+    Q_ASSERT(innerRect.width() == innerRect.height());
     Q_ASSERT(innerRect.center() == outerRect.center());
     setPen(QPen(QBrush(Qt::white), 3));
     setHighlight(false);
     setAcceptHoverEvents(true);
 
+    qreal innerRadius = 0.5 * innerRect.width();
+    qreal outerRadius = 0.5 * outerRect.width();
+    qreal radius = 0.5 * (innerRadius + outerRadius);
+    qreal bentArcLength = 90 - arcLength;
+    qreal bentRadius = radius * arcLength / bentArcLength;
+    qreal bentInnerRadius = bentRadius + innerRadius - radius;
+    qreal bentOuterRadius = bentRadius + outerRadius - radius;
+    QPointF center = innerRect.center();
+    normalPath = createSegmentPath(innerRect, outerRect, startAngle, arcLength);
     {
-        normalPath.arcMoveTo(innerRect, -angle);
-        QPointF innerPos = normalPath.currentPosition();
-        normalPath.arcMoveTo(outerRect, 0);
-        normalPath.arcTo(outerRect, 0, -angle);
-        normalPath.lineTo(innerPos);
-        normalPath.arcTo(innerRect, -angle, angle);
-        normalPath.closeSubpath();
+        QPointF bentCenter = center + ::rotate(QPointF(radius + bentRadius, 0), startAngle);
+        QRectF bentInnerRect(bentCenter.x() - bentInnerRadius, bentCenter.y() - bentInnerRadius, bentInnerRadius * 2, bentInnerRadius * 2);
+        QRectF bentOuterRect(bentCenter.x() - bentOuterRadius, bentCenter.y() - bentOuterRadius, bentOuterRadius * 2, bentOuterRadius * 2);
+        bentAtEndPath = normalPath | createSegmentPath(bentInnerRect, bentOuterRect, startAngle + 180, -bentArcLength);
     }
     {
-        endPath.arcMoveTo(outerRect, 0);
-        QPointF p1 = endPath.currentPosition();
-        endPath.arcMoveTo(outerRect, -angle);
-        QPointF p2 = endPath.currentPosition();
-        QPointF diff = p2 - p1;
-        qreal angleBent = 45.0 - angle;
-        qreal outerRadius = diff.y() / tan(angleBent * M_PI / 180.0) - diff.x();
-        qreal innerRadius = outerRadius - 0.5 * (outerRect.width() - innerRect.width());
-        QPointF centerOffset(outerRect.right() - outerRect.center().x() + innerRadius, 0);
-        QPointF centerBent = outerRect.center() + centerOffset;
-        QRectF innerRectBent(centerBent.x() - innerRadius, centerBent.y() - innerRadius, innerRadius * 2, innerRadius * 2);
-        QRectF outerRectBent(centerBent.x() - outerRadius, centerBent.y() - outerRadius, outerRadius * 2, outerRadius * 2);
-        endPath.arcMoveTo(innerRectBent, 180.0 + angleBent);
-        QPointF innerPos = endPath.currentPosition();
-        endPath.arcMoveTo(outerRectBent, 180.0);
-        endPath.arcTo(outerRectBent, 180.0, angleBent);
-        endPath.lineTo(innerPos);
-        endPath.arcTo(innerRectBent, 180.0 + angleBent, -angleBent);
-        endPath.closeSubpath();
-        endPath |= normalPath;
+        QPointF bentCenter = center + ::rotate(QPointF(radius + bentRadius, 0), startAngle + arcLength);
+        QRectF bentInnerRect(bentCenter.x() - bentInnerRadius, bentCenter.y() - bentInnerRadius, bentInnerRadius * 2, bentInnerRadius * 2);
+        QRectF bentOuterRect(bentCenter.x() - bentOuterRadius, bentCenter.y() - bentOuterRadius, bentOuterRadius * 2, bentOuterRadius * 2);
+        bentAtBeginPath = normalPath | createSegmentPath(bentInnerRect, bentOuterRect, startAngle + 180 + arcLength, bentArcLength);
     }
-    {
-        beginPath.arcMoveTo(outerRect, 0);
-        QPointF p1 = beginPath.currentPosition();
-        beginPath.arcMoveTo(outerRect, -angle);
-        QPointF p2 = beginPath.currentPosition();
-        QPointF diff = p2 - p1;
-        qreal angleBent = 45.0 - angle;
-        qreal outerRadius = diff.y() / tan(angleBent * M_PI / 180.0) - diff.x();
-        qreal innerRadius = outerRadius - 0.5 * (outerRect.width() - innerRect.width());
-        QPointF centerOffset(outerRect.right() - outerRect.center().x() + innerRadius, 0);
-        QPointF centerBent = outerRect.center() + ::rotate(centerOffset, angle);
-        QRectF innerRectBent(centerBent.x() - innerRadius, centerBent.y() - innerRadius, innerRadius * 2, innerRadius * 2);
-        QRectF outerRectBent(centerBent.x() - outerRadius, centerBent.y() - outerRadius, outerRadius * 2, outerRadius * 2);
-        beginPath.arcMoveTo(innerRectBent, 180.0 - angleBent);
-        QPointF innerPos = beginPath.currentPosition();
-        beginPath.arcMoveTo(outerRectBent, 180.0 - 2 * angleBent);
-        beginPath.arcTo(outerRectBent, 180.0 - 2 * angleBent, angleBent);
-        beginPath.lineTo(innerPos);
-        beginPath.arcTo(innerRectBent, 180.0 - angleBent, -angleBent);
-        beginPath.closeSubpath();
-        beginPath |= normalPath;
-    }
+    bentPath = bentAtEndPath | bentAtBeginPath;
 
     setShape(NORMAL);
 }
@@ -296,7 +275,7 @@ void RoundaboutTestSegmentItem::setHighlight(bool highlight)
     if ((hover && !state) || (highlight && state)) {
         setBrush(QBrush(highlightedColor));
     } else if (hover && state) {
-        setBrush(QBrush(mix(stateColor, highlightedColor, 1, 3)));
+        setBrush(QBrush(mixColors(stateColor, highlightedColor, 1, 3)));
     } else if (state) {
         setBrush(QBrush(stateColor));
     } else {
@@ -315,11 +294,13 @@ void RoundaboutTestSegmentItem::setShape(Shape shape)
         myShape = shape;
         if (shape == NORMAL) {
             setPath(normalPath);
+        } else if (shape == BENT) {
+            setPath(bentPath);
         } else if (shape == BENT_AT_END) {
-            setPath(endPath);
+            setPath(bentAtEndPath);
         } else {
             // shape == BENT_AT_BEGIN
-            setPath(beginPath);
+            setPath(bentAtBeginPath);
         }
     }
 }
@@ -387,12 +368,12 @@ RoundaboutTestArrowItem::RoundaboutTestArrowItem(QRectF innerRect, QRectF outerR
     setPath(path);
 }
 
-RoundaboutTestKeyItem::RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal angle, QColor color, QColor stateColor_, QGraphicsItem *parent) :
+RoundaboutTestKeyItem::RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, QColor color, QColor stateColor_, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
     normalColor(color),
     highlightedColor(Qt::white),
     stateColor(stateColor_),
-    lowkeyColor(mix(QColor("lightsteelblue"), QColor(Qt::white), 1, 1)),
+    lowkeyColor(mixColors(QColor("lightsteelblue"), QColor(Qt::white), 1, 1)),
     state(false),
     hover(false),
     highlight(false),
@@ -402,15 +383,7 @@ RoundaboutTestKeyItem::RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect,
     setBrush(QBrush(normalColor));
     setFlag(QGraphicsItem::ItemIgnoresParentOpacity, state);
     setAcceptHoverEvents(true);
-    QPainterPath path;
-    path.arcMoveTo(innerRect, -(startAngle + angle));
-    QPointF innerPos = path.currentPosition();
-    path.arcMoveTo(outerRect, -startAngle);
-    path.arcTo(outerRect, -startAngle, -angle);
-    path.lineTo(innerPos);
-    path.arcTo(innerRect, -(startAngle + angle), angle);
-    path.closeSubpath();
-    setPath(path);
+    setPath(createSegmentPath(innerRect, outerRect, startAngle, arcLength));
 }
 
 void RoundaboutTestKeyItem::setHighlight(bool highlight)
@@ -419,7 +392,7 @@ void RoundaboutTestKeyItem::setHighlight(bool highlight)
     if ((hover && !state) || (highlight && state)) {
         setBrush(QBrush(highlightedColor));
     } else if (hover && state) {
-        setBrush(QBrush(mix(stateColor, highlightedColor, 1, 3)));
+        setBrush(QBrush(mixColors(stateColor, highlightedColor, 1, 3)));
     } else if (state) {
         setBrush(QBrush(stateColor));
     } else {
@@ -458,7 +431,7 @@ void RoundaboutTestKeyItem::mousePressEvent(QGraphicsSceneMouseEvent * event)
     setHighlight(highlight);
 }
 
-RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(QRectF innerRect, QRectF outerRect, Direction dir, qreal angle, QGraphicsItem *parent) :
+RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(QRectF innerRect, QRectF outerRect, Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent) :
     QGraphicsPathItem(parent)
 {
     setPen(QPen(Qt::NoPen));
@@ -475,11 +448,11 @@ RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(QRectF innerRect, QRectF 
         }
         QRectF outerKeyRect = (1.0 - from) * innerRect + from * outerRect;
         QRectF innerKeyRect = (1.0 - to) * innerRect + to * outerRect;
-        RoundaboutTestKeyItem *keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, 0, angle, QColor("lightsteelblue"),QColor("steelblue"), this);
+        RoundaboutTestKeyItem *keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle, arcLength, QColor("lightsteelblue"),QColor("steelblue"), this);
         keyItems.append(keyItem);
     }
     // black keys:
-    qreal blackKeyAngle = 0.6 * angle;
+    qreal blackKeyArcLength = 0.6 * arcLength;
     qreal blackKeyWidth = 0.75 * keyWidth;
     QVector<qreal> blackKeys;
     blackKeys.append((3.0 * keyWidth - 2.0 * blackKeyWidth) / 3.0);
@@ -498,13 +471,12 @@ RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(QRectF innerRect, QRectF 
         QRectF innerKeyRect = (1.0 - to) * innerRect + to * outerRect;
         RoundaboutTestKeyItem *keyItem;
         if (dir == INNER_TO_OUTER) {
-            keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, 0, blackKeyAngle, QColor("steelblue"), QColor("black"), this);
+            keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle, blackKeyArcLength, QColor("steelblue"), QColor("black"), this);
         } else {
-            keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, angle - blackKeyAngle, blackKeyAngle, QColor("steelblue"), QColor("black"), this);
+            keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle + arcLength - blackKeyArcLength, blackKeyArcLength, QColor("steelblue"), QColor("black"), this);
         }
         for (int j = 0; j < keys; j++) {
-            QPainterPath keyPath = keyItems[j]->path() - keyItem->path();
-            keyItems[j]->setPath(keyPath);
+            keyItems[j]->setPath(keyItems[j]->path() - keyItem->path());
         }
         keyItems.append(keyItem);
     }
@@ -524,32 +496,20 @@ void RoundaboutTestKeyboardItem::setLowkey(bool lowkey)
     }
 }
 
-RoundaboutTestSliceItem::RoundaboutTestSliceItem(QRectF innerRect, QRectF outerRect, RoundaboutTestKeyboardItem::Direction dir, qreal angle, QGraphicsItem *parent) :
+RoundaboutTestSliceItem::RoundaboutTestSliceItem(QRectF innerRect, QRectF outerRect, RoundaboutTestKeyboardItem::Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
-    normalColor(mix(QColor("lightsteelblue"), QColor(Qt::white), 1, 1))
+    normalColor(mixColors(QColor("lightsteelblue"), QColor(Qt::white), 1, 1))
 {
+    Q_ASSERT(outerRect.width() == outerRect.height());
+    Q_ASSERT(innerRect.width() == innerRect.height());
+    Q_ASSERT(innerRect.center() == outerRect.center());
     setPen(QPen(QBrush(Qt::white), 3));
     setBrush(QBrush(normalColor));
     setAcceptHoverEvents(true);
-    normalShape.arcMoveTo(innerRect, -angle);
-    QPointF innerPos = normalShape.currentPosition();
-    normalShape.arcMoveTo(outerRect, 0);
-    normalShape.arcTo(outerRect, 0, -angle);
-    normalShape.lineTo(innerPos);
-    normalShape.arcTo(innerRect, -angle, angle);
-    normalShape.closeSubpath();
-    setPath(normalShape);
-    extendedShape.arcMoveTo(1.15 * outerRect, 0);
-    extendedShape.arcTo(1.15 * outerRect, 0, -angle);
-    extendedShape.lineTo(innerPos);
-    extendedShape.arcTo(innerRect, -angle, angle);
-    extendedShape.closeSubpath();
-    keyboardItem = new RoundaboutTestKeyboardItem(innerRect, 0.85 * outerRect, dir, angle, this);
+    setPath(createSegmentPath(innerRect, outerRect, startAngle, arcLength));
+    keyboardItem = new RoundaboutTestKeyboardItem(innerRect, 0.85 * outerRect, dir, startAngle, arcLength, this);
     keyboardItem->setLowkey(true);
-    segmentItem = new RoundaboutTestSegmentItem(0.85 * outerRect, outerRect, angle, this);
-//    dragItem = new RoundaboutTestDragItem(this);
-//    dragItem->setPos(::rotate(QPointF(0.5 * 1.075 * outerRect.width(), 0), 0.5 * angle));
-//    dragItem->setVisible(false);
+    segmentItem = new RoundaboutTestSegmentItem(0.85 * outerRect, outerRect, startAngle, arcLength, this);
 }
 
 void RoundaboutTestSliceItem::setHighlight(bool highlight)
@@ -568,15 +528,11 @@ RoundaboutTestKeyboardItem * RoundaboutTestSliceItem::getKeyboardItem()
 void RoundaboutTestSliceItem::hoverEnterEvent(QGraphicsSceneHoverEvent * event)
 {
     keyboardItem->setLowkey(false);
-//    dragItem->setVisible(true);
-    setPath(extendedShape);
 }
 
 void RoundaboutTestSliceItem::hoverLeaveEvent(QGraphicsSceneHoverEvent * event)
 {
     keyboardItem->setLowkey(true);
-//    dragItem->setVisible(false);
-    setPath(normalShape);
 }
 
 
@@ -597,8 +553,7 @@ RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent) :
     RoundaboutTestPlayItem *playItem = new RoundaboutTestPlayItem(0.075 * innerRect, this);
     // create a slice for each step:
     for (int i = 0; i < steps; i++) {
-        RoundaboutTestSliceItem *sliceItem = new RoundaboutTestSliceItem(0.25 * innerRect, innerRect, i < steps / 2 ? RoundaboutTestKeyboardItem::INNER_TO_OUTER : RoundaboutTestKeyboardItem::OUTER_TO_INNER, sliceAngle, this);
-        sliceItem->setRotation(-90 - 0.5 * sliceAngle + sliceAngle * i);
+        RoundaboutTestSliceItem *sliceItem = new RoundaboutTestSliceItem(0.25 * innerRect, innerRect, i < steps / 2 ? RoundaboutTestKeyboardItem::INNER_TO_OUTER : RoundaboutTestKeyboardItem::OUTER_TO_INNER, sliceAngle * i - 90, sliceAngle, this);
         sliceItem->getKeyboardItem()->setOpacity(0);
         sliceItems.append(sliceItem);
     }
@@ -606,7 +561,7 @@ RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent) :
     qreal arrowAngle = 12;
     qreal arrowTipOffset = 5;
     arrowItem = new RoundaboutTestArrowItem(0.85 * innerRect, innerRect, arrowAngle, arrowTipOffset, this);
-    arrowItem->setRotation(-90 - 0.5 * sliceAngle);
+    arrowItem->setRotation(-90 /*- 0.5 * sliceAngle*/);
     timer.setInterval(50);
     QObject::connect(&timer, SIGNAL(timeout()), this, SLOT(onTimer()));
     QObject::connect(playItem, SIGNAL(changedState(bool)), this, SLOT(changeState(bool)));
@@ -638,7 +593,7 @@ void RoundaboutTestItem::leaveStep(int step)
 
 void RoundaboutTestItem::changeState(bool play)
 {
-    qreal angle = arrowItem->rotation() + 90 + 0.5 * sliceAngle;
+    qreal angle = arrowItem->rotation() + 90 /*+ 0.5 * sliceAngle*/;
     if (angle < 0) {
         angle += 360;
     }
@@ -658,7 +613,7 @@ void RoundaboutTestItem::changeState(bool play)
 
 void RoundaboutTestItem::onTimer()
 {
-    qreal angle = arrowItem->rotation() + 90 + 0.5 * sliceAngle;
+    qreal angle = arrowItem->rotation() + 90 /*+ 0.5 * sliceAngle*/;
     if (angle < 0) {
         angle += 360;
     }
@@ -668,7 +623,7 @@ void RoundaboutTestItem::onTimer()
         angle -= 360;
     }
     int nextStep = (int)(angle / sliceAngle) % steps;
-    arrowItem->setRotation(angle - 90 - 0.5 * sliceAngle);
+    arrowItem->setRotation(angle - 90 /*- 0.5 * sliceAngle*/);
     if (previousStep != nextStep) {
         leaveStep(previousStep);
         enterStep(nextStep);

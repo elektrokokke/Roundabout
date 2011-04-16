@@ -80,10 +80,11 @@ class RoundaboutTestSegmentItem : public QGraphicsPathItem
 public:
     enum Shape {
         NORMAL,
+        BENT,
         BENT_AT_BEGIN,
         BENT_AT_END
     };
-    RoundaboutTestSegmentItem(QRectF innerRect, QRectF outerRect, qreal angle, QGraphicsItem *parent = 0);
+    RoundaboutTestSegmentItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, QGraphicsItem *parent = 0);
     void setHighlight(bool highlight);
     bool getState() const;
     void setShape(Shape shape);
@@ -94,12 +95,10 @@ protected:
     virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
     virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent * event);
 private:
-    QRectF innerRect, outerRect;
-    qreal angle;
     Shape myShape;
     QColor normalColor, highlightedColor, stateColor;
     bool state, hover, highlight;
-    QPainterPath normalPath, beginPath, endPath;
+    QPainterPath normalPath, bentPath, bentAtBeginPath, bentAtEndPath;
 };
 
 class RoundaboutTestArrowItem : public QGraphicsPathItem
@@ -114,7 +113,7 @@ private:
 class RoundaboutTestKeyItem : public QGraphicsPathItem
 {
 public:
-    RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal angle, QColor color, QColor stateColor, QGraphicsItem *parent = 0);
+    RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, QColor color, QColor stateColor, QGraphicsItem *parent = 0);
     void setHighlight(bool highlight);
     void setLowkey(bool lowkey);
 protected:
@@ -133,7 +132,7 @@ public:
         INNER_TO_OUTER,
         OUTER_TO_INNER
     };
-    RoundaboutTestKeyboardItem(QRectF innerRect, QRectF outerRect, Direction dir, qreal angle, QGraphicsItem *parent = 0);
+    RoundaboutTestKeyboardItem(QRectF innerRect, QRectF outerRect, Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent = 0);
     void setHighlight(bool highlight);
     void setLowkey(bool lowkey);
 private:
@@ -143,7 +142,7 @@ private:
 class RoundaboutTestSliceItem : public QGraphicsPathItem
 {
 public:
-    RoundaboutTestSliceItem(QRectF innerRect, QRectF outerRect, RoundaboutTestKeyboardItem::Direction dir, qreal angle, QGraphicsItem *parent = 0);
+    RoundaboutTestSliceItem(QRectF innerRect, QRectF outerRect, RoundaboutTestKeyboardItem::Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent = 0);
     void setHighlight(bool highlight);
     RoundaboutTestKeyboardItem *getKeyboardItem();
 protected:
@@ -151,10 +150,8 @@ protected:
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
 private:
     QColor normalColor;
-    QPainterPath normalShape, extendedShape;
     RoundaboutTestKeyboardItem *keyboardItem;
     RoundaboutTestSegmentItem *segmentItem;
-//    RoundaboutTestDragItem *dragItem;
 };
 
 class RoundaboutTestItem : public QObject, public QGraphicsEllipseItem
