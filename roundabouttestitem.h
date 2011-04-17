@@ -20,6 +20,7 @@
     along with Roundabout.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "roundaboutscene.h"
 #include <QGraphicsEllipseItem>
 #include <QTimer>
 
@@ -75,40 +76,6 @@ private:
     bool hover;
 };
 
-class RoundaboutTestConnectionItem : public QGraphicsPathItem
-{
-public:
-    enum Point {
-        P1,
-        P2
-    };
-    RoundaboutTestConnectionItem(qreal width, QGraphicsItem *parent = 0);
-    void setPoint1(QPointF p, qreal angle);
-    void setPoint2(QPointF p, qreal angle);
-    void setPoint(Point point, QPointF p, qreal angle);
-private:
-    QPointF p1, p2;
-    qreal angle1, angle2, width;
-    static QPainterPath createConnectionPath(QPointF a, qreal aAngle, QPointF b, qreal bAngle);
-};
-
-class RoundaboutTestSegmentItem;
-
-class RoundaboutTestSegmentHeadItem : public QGraphicsPathItem
-{
-public:
-    RoundaboutTestSegmentHeadItem(QColor color, QPointF anchor, qreal angle, QGraphicsItem *parent);
-    void beginMove();
-protected:
-    virtual void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
-    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
-private:
-    QColor color;
-    QPointF anchor;
-    qreal angle;
-    QGraphicsPathItem *pathItem;
-};
-
 class RoundaboutTestSegmentItem : public QGraphicsPathItem
 {
 public:
@@ -121,17 +88,24 @@ public:
     void setHighlight(bool highlight);
     bool getState() const;
     void setShape(Shape shape);
+    RoundaboutTestConnectionItem * getConnectionItem();
+    void setConnectionItem(RoundaboutTestConnectionItem::Point point, RoundaboutTestConnectionItem *connectionItem);
+    void removeConnection();
 protected:
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
     virtual void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
+    virtual QVariant itemChange(GraphicsItemChange change, const QVariant & value);
 private:
     Shape myShape;
     QColor normalColor, highlightedColor, stateColor;
     bool state, hover, highlight;
     QPainterPath normalPath, bentAtBeginPath, bentAtEndPath;
-    RoundaboutTestSegmentHeadItem *headItem;
+    QPointF bentAtEndAnchor, bentAtBeginAnchor;
+    qreal bentAtEndAngle, bentAtBeginAngle;
+    RoundaboutTestConnectionItem *connectionItem;
+    RoundaboutTestConnectionItem::Point connectionPoint;
 };
 
 class RoundaboutTestArrowItem : public QGraphicsPathItem
@@ -178,6 +152,7 @@ public:
     RoundaboutTestSliceItem(QRectF innerRect, QRectF outerRect, RoundaboutTestKeyboardItem::Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent = 0);
     void setHighlight(bool highlight);
     RoundaboutTestKeyboardItem *getKeyboardItem();
+    RoundaboutTestSegmentItem *getSegmentItem();
 protected:
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
@@ -192,6 +167,7 @@ class RoundaboutTestItem : public QObject, public QGraphicsEllipseItem
     Q_OBJECT
 public:
     RoundaboutTestItem(QGraphicsItem *parent = 0);
+    RoundaboutTestSegmentItem * getSegmentAt(QPointF pos);
 protected:
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
