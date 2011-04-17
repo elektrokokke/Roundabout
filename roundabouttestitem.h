@@ -162,9 +162,8 @@ private:
     RoundaboutTestSegmentItem *segmentItem;
 };
 
-class RoundaboutTestItem : public QObject, public QGraphicsEllipseItem
+class RoundaboutTestItem : public QGraphicsEllipseItem
 {
-    Q_OBJECT
 public:
     RoundaboutTestItem(QGraphicsItem *parent = 0);
     RoundaboutTestSegmentItem * getSegmentAt(QPointF pos);
@@ -173,17 +172,12 @@ protected:
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
 private:
     int steps;
-    QTimer timer;
     qreal sliceAngle;
     RoundaboutTestArrowItem *arrowItem;
     QVector<RoundaboutTestSliceItem*> sliceItems;
-    qreal bpm;
 
     void enterStep(int step);
     void leaveStep(int step);
-private slots:
-    void changeState(bool play);
-    void onTimer();
 };
 
 #endif // ROUNDABOUTTESTITEM_H

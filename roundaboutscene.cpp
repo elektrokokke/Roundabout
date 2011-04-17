@@ -32,6 +32,7 @@ RoundaboutTestConnectionItem::RoundaboutTestConnectionItem(QColor color_, qreal 
 {
     setPen(QPen(QBrush(color), width, Qt::SolidLine, Qt::FlatCap));
     setBrush(QBrush(Qt::NoBrush));
+    setZValue(1);
 }
 
 void RoundaboutTestConnectionItem::setSegment(Point point, RoundaboutTestSegmentItem *segmentItem, QPointF p, qreal angle)
@@ -91,10 +92,11 @@ void RoundaboutTestConnectionItem::setPoint(Point point, QPointF p)
     }
 }
 
-void RoundaboutTestConnectionItem::startMove(Point point)
+void RoundaboutTestConnectionItem::startMove(Point point, QPointF pos)
 {
     grabMouse();
     movingPoint = point;
+    setPoint(movingPoint, mapFromScene(pos));
 }
 
 void RoundaboutTestConnectionItem::mouseMoveEvent(QGraphicsSceneMouseEvent * event)

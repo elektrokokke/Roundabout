@@ -36,7 +36,7 @@ public:
     void setSegment(Point point, RoundaboutTestSegmentItem *segmentItem, QPointF p, qreal angle);
     void setPoint(Point point, QPointF p, qreal angle);
     void setPoint(Point point, QPointF p);
-    void startMove(Point point);
+    void startMove(Point point, QPointF pos);
 protected:
     virtual void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);

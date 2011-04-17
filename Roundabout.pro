@@ -32,3 +32,6 @@ FORMS    += roundabout.ui
 OTHER_FILES += \
     README \
     license.txt
+
+RESOURCES += \
+    roundabout.qrc

@@ -35,8 +35,12 @@ public:
     explicit Roundabout(QWidget *parent = 0);
     ~Roundabout();
 
+private slots:
+    void on_actionCreate_roundabout_triggered();
+
 private:
     Ui::Roundabout *ui;
+    QPointF nextItemPosition;
     RoundaboutScene roundaboutScene;
 };
 

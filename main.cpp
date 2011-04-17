@@ -26,9 +26,9 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    Utils::StyleHelper::setBaseColor(Utils::StyleHelper::DEFAULT_BASE_COLOR);
-    QString baseName = a.style()->objectName();
-    a.setStyle(new ManhattanStyle(baseName));
+//    Utils::StyleHelper::setBaseColor(Utils::StyleHelper::DEFAULT_BASE_COLOR);
+//    QString baseName = a.style()->objectName();
+//    a.setStyle(new ManhattanStyle(baseName));
 
     Roundabout w;
     w.show();

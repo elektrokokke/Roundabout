@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/svg">
+        <file alias="circle.svg">images/noun_project_149_1.svg</file>
+        <file alias="director.svg">images/noun_project_166.svg</file>
+    </qresource>
+</RCC>

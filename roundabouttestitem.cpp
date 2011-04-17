@@ -368,9 +368,9 @@ void RoundaboutTestSegmentItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     if (!connectionItem) {
         connectionItem = ((RoundaboutScene*)scene())->createConnectionItem(stateColor, 27);
         setConnectionItem(RoundaboutTestConnectionItem::P1, connectionItem);
-        connectionItem->startMove(RoundaboutTestConnectionItem::P2);
+        connectionItem->startMove(RoundaboutTestConnectionItem::P2, event->scenePos());
     } else {
-        connectionItem->startMove(connectionPoint);
+        connectionItem->startMove(connectionPoint, event->scenePos());
     }
 }
 
@@ -587,8 +587,7 @@ void RoundaboutTestSliceItem::hoverLeaveEvent(QGraphicsSceneHoverEvent * event)
 RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent) :
     QGraphicsEllipseItem(-200, -200, 400, 400, parent),
     steps(16),
-    sliceAngle(360.0 / steps),
-    bpm(120)
+    sliceAngle(360.0 / steps)
 {
     setFlag(QGraphicsItem::ItemIsMovable);
     setFlag(QGraphicsItem::ItemSendsGeometryChanges);
@@ -598,27 +597,17 @@ RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent) :
     QRectF innerRect(-200, -200, 400, 400);
     // create a circle in the center:
     new RoundaboutTestCenterItem(0.25 * innerRect, this);
-    // create a play "button":
-    RoundaboutTestPlayItem *playItem = new RoundaboutTestPlayItem(0.075 * innerRect, this);
     // create a slice for each step:
     for (int i = 0; i < steps; i++) {
-        RoundaboutTestSliceItem *sliceItem = new RoundaboutTestSliceItem(0.25 * innerRect, innerRect, i < steps / 2 ? RoundaboutTestKeyboardItem::INNER_TO_OUTER : RoundaboutTestKeyboardItem::OUTER_TO_INNER, sliceAngle * i - 90, sliceAngle, this);
+        RoundaboutTestSliceItem *sliceItem = new RoundaboutTestSliceItem(0.25 * innerRect, innerRect, i < steps / 2 ? RoundaboutTestKeyboardItem::INNER_TO_OUTER : RoundaboutTestKeyboardItem::OUTER_TO_INNER, sliceAngle * i - 90 - 0.5 * sliceAngle, sliceAngle, this);
         sliceItem->getKeyboardItem()->setOpacity(0);
         sliceItems.append(sliceItem);
     }
-    // create arrow:
-    qreal arrowAngle = 12;
-    qreal arrowTipOffset = 5;
-    arrowItem = new RoundaboutTestArrowItem(0.85 * innerRect, innerRect, arrowAngle, arrowTipOffset, this);
-    arrowItem->setRotation(-90 /*- 0.5 * sliceAngle*/);
-    timer.setInterval(50);
-    QObject::connect(&timer, SIGNAL(timeout()), this, SLOT(onTimer()));
-    QObject::connect(playItem, SIGNAL(changedState(bool)), this, SLOT(changeState(bool)));
 }
 
 RoundaboutTestSegmentItem * RoundaboutTestItem::getSegmentAt(QPointF pos)
 {
-    qreal angle = -QLineF(QPointF(0, 0), pos).angle() + 90;
+    qreal angle = -QLineF(QPointF(0, 0), pos).angle() + 90 + 0.5 * sliceAngle;
     for (; angle < 0; angle += 360);
     int step = (int)(angle / sliceAngle) % steps;
     return sliceItems[step]->getSegmentItem();
@@ -648,41 +637,3 @@ void RoundaboutTestItem::leaveStep(int step)
     sliceItems[step]->setHighlight(false);
 }
 
-void RoundaboutTestItem::changeState(bool play)
-{
-    qreal angle = arrowItem->rotation() + 90 /*+ 0.5 * sliceAngle*/;
-    if (angle < 0) {
-        angle += 360;
-    }
-    int step = (int)(angle / sliceAngle) % steps;
-    if (play) {
-        if (!timer.isActive()) {
-            enterStep(step);
-        }
-        timer.start();
-    } else {
-        if (timer.isActive()) {
-            leaveStep(step);
-        }
-        timer.stop();
-    }
-}
-
-void RoundaboutTestItem::onTimer()
-{
-    qreal angle = arrowItem->rotation() + 90 /*+ 0.5 * sliceAngle*/;
-    if (angle < 0) {
-        angle += 360;
-    }
-    int previousStep = (int)(angle / sliceAngle) % steps;
-    angle += (qreal)timer.interval() / 60000.0 * 360.0 / 4.0 * bpm;
-    if (angle >= 360) {
-        angle -= 360;
-    }
-    int nextStep = (int)(angle / sliceAngle) % steps;
-    arrowItem->setRotation(angle - 90 /*- 0.5 * sliceAngle*/);
-    if (previousStep != nextStep) {
-        leaveStep(previousStep);
-        enterStep(nextStep);
-    }
-}

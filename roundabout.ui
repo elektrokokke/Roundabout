@@ -48,20 +48,25 @@
      <height>21</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>File</string>
-    </property>
-    <addaction name="actionQuit"/>
-   </widget>
-   <addaction name="menuFile"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
    <property name="movable">
     <bool>true</bool>
    </property>
    <property name="allowedAreas">
     <set>Qt::AllToolBarAreas</set>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>32</width>
+     <height>32</height>
+    </size>
    </property>
    <property name="floatable">
     <bool>false</bool>
@@ -72,33 +77,32 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionQuit"/>
+   <addaction name="actionCreate_roundabout"/>
+   <addaction name="actionCreate_conductor"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="actionQuit">
+  <action name="actionCreate_conductor">
+   <property name="icon">
+    <iconset resource="roundabout.qrc">
+     <normaloff>:/svg/director.svg</normaloff>:/svg/director.svg</iconset>
+   </property>
    <property name="text">
-    <string>Quit</string>
+    <string>Create director</string>
+   </property>
+  </action>
+  <action name="actionCreate_roundabout">
+   <property name="icon">
+    <iconset resource="roundabout.qrc">
+     <normaloff>:/svg/circle.svg</normaloff>:/svg/circle.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Create roundabout</string>
    </property>
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
- <connections>
-  <connection>
-   <sender>actionQuit</sender>
-   <signal>triggered()</signal>
-   <receiver>Roundabout</receiver>
-   <slot>close()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>199</x>
-     <y>149</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <resources>
+  <include location="roundabout.qrc"/>
+ </resources>
+ <connections/>
 </ui>

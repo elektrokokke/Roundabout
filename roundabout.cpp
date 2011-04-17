@@ -29,15 +29,18 @@ Roundabout::Roundabout(QWidget *parent) :
     ui->graphicsView->setRenderHint(QPainter::Antialiasing);
     // display our RoundaboutScene in the graphics view:
     ui->graphicsView->setScene(&roundaboutScene);
-    // add a test item to the scene:
-    RoundaboutTestItem *testItem1 = new RoundaboutTestItem();
-    RoundaboutTestItem *testItem2 = new RoundaboutTestItem();
-    testItem2->setPos(testItem2->rect().width() + 56, 0);
-    roundaboutScene.addItem(testItem1);
-    roundaboutScene.addItem(testItem2);
 }
 
 Roundabout::~Roundabout()
 {
     delete ui;
+}
+
+void Roundabout::on_actionCreate_roundabout_triggered()
+{
+    // add a test item to the scene:
+    RoundaboutTestItem *testItem = new RoundaboutTestItem();
+    testItem->setPos(nextItemPosition);
+    nextItemPosition += QPointF(testItem->rect().width() + 50, 0);
+    roundaboutScene.addItem(testItem);
 }
