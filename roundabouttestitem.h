@@ -118,7 +118,12 @@ private:
 class RoundaboutTestKeyItem : public QGraphicsPathItem
 {
 public:
-    RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, QColor color, QColor stateColor, QGraphicsItem *parent = 0);
+    enum KeyType {
+        BLACK,
+        WHITE
+    };
+
+    RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, KeyType keyType, QGraphicsItem *parent = 0);
     void setHighlight(bool highlight);
     void setLowkey(bool lowkey);
 protected:

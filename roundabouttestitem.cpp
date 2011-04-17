@@ -422,11 +422,11 @@ RoundaboutTestArrowItem::RoundaboutTestArrowItem(QRectF rect, qreal tipOffset, Q
     setPath(path);
 }
 
-RoundaboutTestKeyItem::RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, QColor color, QColor stateColor_, QGraphicsItem *parent) :
+RoundaboutTestKeyItem::RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, KeyType keyType, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
-    normalColor(color),
+    normalColor(keyType == WHITE ? "lightsteelblue" : "steelblue"),
     highlightedColor(Qt::white),
-    stateColor(stateColor_),
+    stateColor(keyType == WHITE ? "steelblue" : "black"),
     lowkeyColor(mixColors(QColor("lightsteelblue"), QColor(Qt::white), 1, 1)),
     state(false),
     hover(false),
@@ -446,7 +446,7 @@ void RoundaboutTestKeyItem::setHighlight(bool highlight)
     if ((hover && !state) || (highlight && state)) {
         setBrush(QBrush(highlightedColor));
     } else if (hover && state) {
-        setBrush(QBrush(mixColors(stateColor, highlightedColor, 1, 3)));
+        setBrush(QBrush(stateColor));
     } else if (state) {
         setBrush(QBrush(stateColor));
     } else {
@@ -502,7 +502,7 @@ RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(QRectF innerRect, QRectF 
         }
         QRectF outerKeyRect = (1.0 - from) * innerRect + from * outerRect;
         QRectF innerKeyRect = (1.0 - to) * innerRect + to * outerRect;
-        RoundaboutTestKeyItem *keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle, arcLength, QColor("lightsteelblue"),QColor("steelblue"), this);
+        RoundaboutTestKeyItem *keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle, arcLength, RoundaboutTestKeyItem::WHITE, this);
         keyItems.append(keyItem);
     }
     // black keys:
@@ -525,9 +525,9 @@ RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(QRectF innerRect, QRectF 
         QRectF innerKeyRect = (1.0 - to) * innerRect + to * outerRect;
         RoundaboutTestKeyItem *keyItem;
         if (dir == INNER_TO_OUTER) {
-            keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle, blackKeyArcLength, QColor("steelblue"), QColor("black"), this);
+            keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle, blackKeyArcLength, RoundaboutTestKeyItem::BLACK, this);
         } else {
-            keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle + arcLength - blackKeyArcLength, blackKeyArcLength, QColor("steelblue"), QColor("black"), this);
+            keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle + arcLength - blackKeyArcLength, blackKeyArcLength, RoundaboutTestKeyItem::BLACK, this);
         }
         for (int j = 0; j < keys; j++) {
             keyItems[j]->setPath(keyItems[j]->path() - keyItem->path());
