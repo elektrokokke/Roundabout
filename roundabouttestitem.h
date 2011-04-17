@@ -76,7 +76,7 @@ private:
     bool hover;
 };
 
-class RoundaboutTestSegmentItem : public QGraphicsPathItem
+class RoundaboutTestSegmentItem : public QGraphicsPathItem, public RoundaboutTestConnectable
 {
 public:
     enum Shape {
@@ -88,10 +88,10 @@ public:
     void setHighlight(bool highlight);
     bool getState() const;
     void setShape(Shape shape);
-    RoundaboutTestConnectionItem * getConnectionItem();
-    void setConnectionItem(RoundaboutTestConnectionItem::Point point, RoundaboutTestConnectionItem *connectionItem);
-    void removeConnection();
+    virtual QPointF getConnectionAnchor(RoundaboutTestConnectionPoint point, qreal &angle) const;
 protected:
+    virtual void connected(RoundaboutTestConnectionPoint point, RoundaboutTestConnectionItem *connectionItem);
+    virtual void disconnected();
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
@@ -104,8 +104,6 @@ private:
     QPainterPath normalPath, bentAtBeginPath, bentAtEndPath;
     QPointF bentAtEndAnchor, bentAtBeginAnchor;
     qreal bentAtEndAngle, bentAtBeginAngle;
-    RoundaboutTestConnectionItem *connectionItem;
-    RoundaboutTestConnectionItem::Point connectionPoint;
 };
 
 class RoundaboutTestArrowItem : public QGraphicsPathItem
@@ -162,11 +160,21 @@ private:
     RoundaboutTestSegmentItem *segmentItem;
 };
 
-class RoundaboutTestItem : public QGraphicsEllipseItem
+class RoundaboutTestConductorItem : public QGraphicsPathItem, public RoundaboutTestConnectable
 {
 public:
-    RoundaboutTestItem(QGraphicsItem *parent = 0);
-    RoundaboutTestSegmentItem * getSegmentAt(QPointF pos);
+    RoundaboutTestConductorItem(QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);
+    virtual QPointF getConnectionAnchor(RoundaboutTestConnectionPoint point, qreal &angle) const;
+private:
+    QPointF anchor;
+    qreal angle;
+};
+
+class RoundaboutTestItem : public QGraphicsEllipseItem, public RoundaboutTestConnectableHost
+{
+public:
+    RoundaboutTestItem(QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);
+    virtual RoundaboutTestConnectable * getConnectableAt(QPointF scenePos);
 protected:
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);

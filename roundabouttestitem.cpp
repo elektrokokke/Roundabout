@@ -229,14 +229,14 @@ void RoundaboutTestButtonItem::mousePressEvent(QGraphicsSceneMouseEvent * event)
 
 RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
+    RoundaboutTestConnectable(true, true),
     myShape(BENT_AT_BEGIN),
     normalColor("lightsteelblue"),
     highlightedColor(Qt::white),
     stateColor("steelblue"),
     state(true),
     hover(false),
-    highlight(false),
-    connectionItem(0)
+    highlight(false)
 {
     Q_ASSERT(outerRect.width() == outerRect.height());
     Q_ASSERT(innerRect.width() == innerRect.height());
@@ -314,28 +314,28 @@ void RoundaboutTestSegmentItem::setShape(Shape shape)
     }
 }
 
-RoundaboutTestConnectionItem * RoundaboutTestSegmentItem::getConnectionItem()
+QPointF RoundaboutTestSegmentItem::getConnectionAnchor(RoundaboutTestConnectionPoint point, qreal &angle) const
 {
-    return connectionItem;
+    if (point == P1) {
+        angle = bentAtEndAngle;
+        return mapToScene(bentAtEndAnchor);
+    } else {
+        angle = bentAtBeginAngle;
+        return mapToScene(bentAtBeginAnchor);
+    }
 }
 
-void RoundaboutTestSegmentItem::setConnectionItem(RoundaboutTestConnectionItem::Point point, RoundaboutTestConnectionItem *connectionItem)
+void RoundaboutTestSegmentItem::connected(RoundaboutTestConnectionPoint point, RoundaboutTestConnectionItem *connectionItem)
 {
-    Q_ASSERT(connectionItem == 0);
-    this->connectionItem = connectionItem;
-    connectionPoint = point;
-    if (connectionPoint == RoundaboutTestConnectionItem::P1) {
-        connectionItem->setSegment(connectionPoint, this, mapToScene(bentAtEndAnchor), bentAtEndAngle);
+    if (point == P1) {
         setShape(BENT_AT_END);
     } else {
-        connectionItem->setSegment(connectionPoint, this, mapToScene(bentAtBeginAnchor), bentAtBeginAngle);
         setShape(BENT_AT_BEGIN);
     }
 }
 
-void RoundaboutTestSegmentItem::removeConnection()
+void RoundaboutTestSegmentItem::disconnected()
 {
-    connectionItem = 0;
     setShape(NORMAL);
 }
 
@@ -365,23 +365,18 @@ void RoundaboutTestSegmentItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     }
     state = true;
     setHighlight(highlight);
-    if (!connectionItem) {
-        connectionItem = ((RoundaboutScene*)scene())->createConnectionItem(stateColor, 27);
-        setConnectionItem(RoundaboutTestConnectionItem::P1, connectionItem);
-        connectionItem->startMove(RoundaboutTestConnectionItem::P2, event->scenePos());
+    if (!getConnectionItem()) {
+        setConnectionItem(P1, ((RoundaboutScene*)scene())->createConnectionItem(stateColor, 27));
+        getConnectionItem()->startMove(P2, event->scenePos());
     } else {
-        connectionItem->startMove(connectionPoint, event->scenePos());
+        getConnectionItem()->startMove(getConnectionPoint(), event->scenePos());
     }
 }
 
 QVariant RoundaboutTestSegmentItem::itemChange(GraphicsItemChange change, const QVariant & value)
 {
-    if (connectionItem && (change == QGraphicsItem::ItemScenePositionHasChanged)) {
-        if (connectionPoint == RoundaboutTestConnectionItem::P1) {
-            connectionItem->setPoint(connectionPoint, mapToScene(bentAtEndAnchor), bentAtEndAngle);
-        } else {
-            connectionItem->setPoint(connectionPoint, mapToScene(bentAtBeginAnchor), bentAtBeginAngle);
-        }
+    if (getConnectionItem() && (change == QGraphicsItem::ItemScenePositionHasChanged)) {
+        getConnectionItem()->movedConnectable(getConnectionPoint());
     }
     return QGraphicsPathItem::itemChange(change, value);
 }
@@ -583,9 +578,20 @@ void RoundaboutTestSliceItem::hoverLeaveEvent(QGraphicsSceneHoverEvent * event)
     keyboardItem->setLowkey(true);
 }
 
+RoundaboutTestConductorItem::RoundaboutTestConductorItem(QGraphicsItem *parent, QGraphicsScene *scene) :
+    QGraphicsPathItem(parent, scene),
+    RoundaboutTestConnectable(true, false)
+{
+}
 
-RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent) :
-    QGraphicsEllipseItem(-200, -200, 400, 400, parent),
+QPointF RoundaboutTestConductorItem::getConnectionAnchor(RoundaboutTestConnectionPoint point, qreal &angle) const
+{
+    angle = this->angle;
+    return anchor;
+}
+
+RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent, QGraphicsScene *scene) :
+    QGraphicsEllipseItem(-200, -200, 400, 400, parent, scene),
     steps(16),
     sliceAngle(360.0 / steps)
 {
@@ -605,9 +611,9 @@ RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent) :
     }
 }
 
-RoundaboutTestSegmentItem * RoundaboutTestItem::getSegmentAt(QPointF pos)
+RoundaboutTestConnectable * RoundaboutTestItem::getConnectableAt(QPointF scenePos)
 {
-    qreal angle = -QLineF(QPointF(0, 0), pos).angle() + 90 + 0.5 * sliceAngle;
+    qreal angle = -QLineF(QPointF(0, 0), mapFromScene(scenePos)).angle() + 90 + 0.5 * sliceAngle;
     for (; angle < 0; angle += 360);
     int step = (int)(angle / sliceAngle) % steps;
     return sliceItems[step]->getSegmentItem();

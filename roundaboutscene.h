@@ -23,29 +23,55 @@
 #include <QGraphicsScene>
 #include <QGraphicsPathItem>
 
-class RoundaboutTestSegmentItem;
+class RoundaboutTestConnectionItem;
+
+enum RoundaboutTestConnectionPoint {
+    P1,
+    P2
+};
+
+class RoundaboutTestConnectable
+{
+public:
+    RoundaboutTestConnectable(bool canConnectP1, bool canConnectP2);
+    RoundaboutTestConnectionItem * getConnectionItem();
+    RoundaboutTestConnectionPoint getConnectionPoint() const;
+    virtual QPointF getConnectionAnchor(RoundaboutTestConnectionPoint point, qreal &angle) const = 0;
+    void setConnectionItem(RoundaboutTestConnectionPoint point, RoundaboutTestConnectionItem *connectionItem);
+    void removeConnection();
+protected:
+    virtual void connected(RoundaboutTestConnectionPoint point, RoundaboutTestConnectionItem *connectionItem);
+    virtual void disconnected();
+private:
+    bool canConnectP1, canConnectP2;
+    RoundaboutTestConnectionItem *connectionItem;
+    RoundaboutTestConnectionPoint connectionPoint;
+};
+
+class RoundaboutTestConnectableHost
+{
+public:
+    virtual RoundaboutTestConnectable * getConnectableAt(QPointF scenePos) = 0;
+};
 
 class RoundaboutTestConnectionItem : public QGraphicsPathItem
 {
 public:
-    enum Point {
-        P1,
-        P2
-    };
     RoundaboutTestConnectionItem(QColor color, qreal width, QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);
-    void setSegment(Point point, RoundaboutTestSegmentItem *segmentItem, QPointF p, qreal angle);
-    void setPoint(Point point, QPointF p, qreal angle);
-    void setPoint(Point point, QPointF p);
-    void startMove(Point point, QPointF pos);
+    void setConnectable(RoundaboutTestConnectionPoint point, RoundaboutTestConnectable *connectable);
+    void movedConnectable(RoundaboutTestConnectionPoint point);
+    void startMove(RoundaboutTestConnectionPoint point, QPointF scenePos);
 protected:
+    void setPoint(RoundaboutTestConnectionPoint point, QPointF pos, qreal angle);
+    void setPoint(RoundaboutTestConnectionPoint point, QPointF pos);
     virtual void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent * event);
 private:
     QColor color;
     QPointF p1, p2;
     qreal angle1, angle2, width;
-    Point movingPoint;
-    RoundaboutTestSegmentItem *segmentItem1, *segmentItem2;
+    RoundaboutTestConnectionPoint movingPoint;
+    RoundaboutTestConnectable *connectable1, *connectable2;
     static QPainterPath createConnectionPath(QPointF p1, qreal angle1, QPointF p2, qreal angle2);
     static QPainterPath createConnectionPath(QPointF p1, qreal angle1, QPointF p2);
 };

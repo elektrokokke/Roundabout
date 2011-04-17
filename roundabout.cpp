@@ -39,8 +39,7 @@ Roundabout::~Roundabout()
 void Roundabout::on_actionCreate_roundabout_triggered()
 {
     // add a test item to the scene:
-    RoundaboutTestItem *testItem = new RoundaboutTestItem();
+    RoundaboutTestItem *testItem = new RoundaboutTestItem(0, &roundaboutScene);
     testItem->setPos(nextItemPosition);
     nextItemPosition += QPointF(testItem->rect().width() + 50, 0);
-    roundaboutScene.addItem(testItem);
 }

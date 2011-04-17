@@ -18,8 +18,49 @@
  */
 
 #include "roundaboutscene.h"
-#include "roundabouttestitem.h"
 #include <QGraphicsSceneMouseEvent>
+
+RoundaboutTestConnectable::RoundaboutTestConnectable(bool canConnectP1_, bool canConnectP2_) :
+    canConnectP1(canConnectP1_),
+    canConnectP2(canConnectP2_),
+    connectionItem(0)
+{
+}
+
+RoundaboutTestConnectionItem * RoundaboutTestConnectable::getConnectionItem()
+{
+    return connectionItem;
+}
+
+RoundaboutTestConnectionPoint RoundaboutTestConnectable::getConnectionPoint() const
+{
+    return connectionPoint;
+}
+
+void RoundaboutTestConnectable::setConnectionItem(RoundaboutTestConnectionPoint point, RoundaboutTestConnectionItem *connectionItem)
+{
+    Q_ASSERT(this->connectionItem == 0);
+    if (((point == P1) && canConnectP1) || ((point == P2) && canConnectP2)) {
+        this->connectionItem = connectionItem;
+        connectionPoint = point;
+        connectionItem->setConnectable(connectionPoint, this);
+        connected(point, connectionItem);
+    }
+}
+
+void RoundaboutTestConnectable::removeConnection()
+{
+    connectionItem = 0;
+    disconnected();
+}
+
+void RoundaboutTestConnectable::connected(RoundaboutTestConnectionPoint point, RoundaboutTestConnectionItem *connectionItem)
+{
+}
+
+void RoundaboutTestConnectable::disconnected()
+{
+}
 
 RoundaboutTestConnectionItem::RoundaboutTestConnectionItem(QColor color_, qreal width_, QGraphicsItem *parent, QGraphicsScene *scene) :
     QGraphicsPathItem(parent, scene),
@@ -27,31 +68,59 @@ RoundaboutTestConnectionItem::RoundaboutTestConnectionItem(QColor color_, qreal 
     angle1(0),
     angle2(0),
     width(width_),
-    segmentItem1(0),
-    segmentItem2(0)
+    connectable1(0),
+    connectable2(0)
 {
     setPen(QPen(QBrush(color), width, Qt::SolidLine, Qt::FlatCap));
     setBrush(QBrush(Qt::NoBrush));
     setZValue(1);
 }
 
-void RoundaboutTestConnectionItem::setSegment(Point point, RoundaboutTestSegmentItem *segmentItem, QPointF p, qreal angle)
+void RoundaboutTestConnectionItem::setConnectable(RoundaboutTestConnectionPoint  point, RoundaboutTestConnectable *connectable)
 {
     if (point == P1) {
-        if (segmentItem1) {
-            segmentItem1->removeConnection();
+        if (connectable1 && (connectable1 != connectable)) {
+            connectable1->removeConnection();
         }
-        segmentItem1 = segmentItem;
+        connectable1 = connectable;
+    } else {
+        if (connectable2 && (connectable2 != connectable)) {
+            connectable2->removeConnection();
+        }
+        connectable2 = connectable;
+    }
+    movedConnectable(point);
+}
+
+void RoundaboutTestConnectionItem::movedConnectable(RoundaboutTestConnectionPoint  point)
+{
+    if (point == P1) {
+        Q_ASSERT(connectable1);
+        p1 = connectable1->getConnectionAnchor(point, angle1);
+        setPath(createConnectionPath(p1, angle1, p2, angle2));
+    } else {
+        Q_ASSERT(connectable2);
+        p2 = connectable2->getConnectionAnchor(point, angle2);
+        setPath(createConnectionPath(p1, angle1, p2, angle2));
+    }
+}
+
+void RoundaboutTestConnectionItem::startMove(RoundaboutTestConnectionPoint  point, QPointF scenePos)
+{
+    grabMouse();
+    movingPoint = point;
+    setPoint(movingPoint, mapFromScene(scenePos));
+}
+
+void RoundaboutTestConnectionItem::setPoint(RoundaboutTestConnectionPoint  point, QPointF p, qreal angle)
+{
+    if (point == P1) {
         if ((p != p1) || (angle != angle1)) {
             p1 = p;
             angle1 = angle;
             setPath(createConnectionPath(p1, angle1, p2, angle2));
         }
     } else {
-        if (segmentItem2) {
-            segmentItem2->removeConnection();
-        }
-        segmentItem2 = segmentItem;
         if ((p != p2) || (angle != angle2)) {
             p2 = p;
             angle2 = angle;
@@ -60,24 +129,7 @@ void RoundaboutTestConnectionItem::setSegment(Point point, RoundaboutTestSegment
     }
 }
 
-void RoundaboutTestConnectionItem::setPoint(Point point, QPointF p, qreal angle)
-{
-    if (point == P1) {
-        if ((p != p1) || (angle != angle1)) {
-            p1 = p;
-            angle1 = angle;
-            setPath(createConnectionPath(p1, angle1, p2, angle2));
-        }
-    } else {
-        if ((p != p2) || (angle != angle2)) {
-            p2 = p;
-            angle2 = angle;
-            setPath(createConnectionPath(p1, angle1, p2, angle2));
-        }
-    }
-}
-
-void RoundaboutTestConnectionItem::setPoint(Point point, QPointF p)
+void RoundaboutTestConnectionItem::setPoint(RoundaboutTestConnectionPoint  point, QPointF p)
 {
     if (point == P1) {
         if (p != p1) {
@@ -92,36 +144,30 @@ void RoundaboutTestConnectionItem::setPoint(Point point, QPointF p)
     }
 }
 
-void RoundaboutTestConnectionItem::startMove(Point point, QPointF pos)
-{
-    grabMouse();
-    movingPoint = point;
-    setPoint(movingPoint, mapFromScene(pos));
-}
-
 void RoundaboutTestConnectionItem::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
 {
     Q_ASSERT(scene());
     QList<QGraphicsItem*> items = scene()->items(event->scenePos(), Qt::IntersectsItemShape, Qt::DescendingOrder);
     for (QList<QGraphicsItem*>::iterator i = items.begin(); i != items.end(); i++) {
-        if (RoundaboutTestItem *testItem = dynamic_cast<RoundaboutTestItem*>(*i)) {
-            RoundaboutTestSegmentItem *segmentItem = testItem->getSegmentAt(testItem->mapFromScene(event->scenePos()));
-            RoundaboutTestConnectionItem *connectionItem = segmentItem->getConnectionItem();
-            if (connectionItem == this) {
+        if (RoundaboutTestConnectableHost *host = dynamic_cast<RoundaboutTestConnectableHost*>(*i)) {
+            if (RoundaboutTestConnectable *connectable = host->getConnectableAt(event->scenePos())) {
+                RoundaboutTestConnectionItem *connectionItem = connectable->getConnectionItem();
+                if (connectionItem == this) {
+                    return;
+                } else if (connectionItem) {
+                    break;
+                }
+                connectable->setConnectionItem(movingPoint, this);
                 return;
-            } else if (connectionItem) {
-                break;
             }
-            segmentItem->setConnectionItem(movingPoint, this);
-            return;
         }
     }
-    if ((movingPoint == P1) && segmentItem1) {
-        segmentItem1->removeConnection();
-        segmentItem1 = 0;
-    } else if ((movingPoint == P2) && segmentItem2) {
-        segmentItem2->removeConnection();
-        segmentItem2 = 0;
+    if ((movingPoint == P1) && connectable1) {
+        connectable1->removeConnection();
+        connectable1 = 0;
+    } else if ((movingPoint == P2) && connectable2) {
+        connectable2->removeConnection();
+        connectable2 = 0;
     }
     setPoint(movingPoint, event->pos());
 }
@@ -129,11 +175,11 @@ void RoundaboutTestConnectionItem::mouseMoveEvent(QGraphicsSceneMouseEvent * eve
 void RoundaboutTestConnectionItem::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
 {
     ungrabMouse();
-    if ((segmentItem1 == 0) || (segmentItem2 == 0)) {
-        if (segmentItem1) {
-            segmentItem1->removeConnection();
-        } else if (segmentItem2) {
-            segmentItem2->removeConnection();
+    if ((connectable1 == 0) || (connectable2 == 0)) {
+        if (connectable1) {
+            connectable1->removeConnection();
+        } else if (connectable2) {
+            connectable2->removeConnection();
         }
         delete this;
     }
