@@ -37,10 +37,11 @@ public:
 
 private slots:
     void on_actionCreate_roundabout_triggered();
+    void on_actionCreate_conductor_triggered();
+    void on_actionAbout_triggered();
 
 private:
     Ui::Roundabout *ui;
-    QPointF nextItemPosition;
     RoundaboutScene roundaboutScene;
 };
 

@@ -366,7 +366,7 @@ void RoundaboutTestSegmentItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     state = true;
     setHighlight(highlight);
     if (!getConnectionItem()) {
-        setConnectionItem(P1, ((RoundaboutScene*)scene())->createConnectionItem(stateColor, 27));
+        setConnectionItem(P1, ((RoundaboutScene*)scene())->createConnectionItem());
         getConnectionItem()->startMove(P2, event->scenePos());
     } else {
         getConnectionItem()->startMove(getConnectionPoint(), event->scenePos());
@@ -383,7 +383,6 @@ QVariant RoundaboutTestSegmentItem::itemChange(GraphicsItemChange change, const 
 
 RoundaboutTestArrowItem::RoundaboutTestArrowItem(QRectF innerRect, QRectF outerRect, qreal angle, qreal tipOffset, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
-    rect(outerRect),
     normalColor("orangered")
 {
     setPen(QPen(QBrush(Qt::white), 3));
@@ -402,6 +401,23 @@ RoundaboutTestArrowItem::RoundaboutTestArrowItem(QRectF innerRect, QRectF outerR
     path.lineTo(arrowInnerFront);
     path.arcTo(innerRect, -0.5 * angle, angle);
     path.lineTo(arrowTipBack);
+    path.closeSubpath();
+    setPath(path);
+}
+
+RoundaboutTestArrowItem::RoundaboutTestArrowItem(QRectF rect, qreal tipOffset, QGraphicsItem *parent) :
+    QGraphicsPathItem(parent),
+    normalColor("orangered")
+{
+    setPen(QPen(QBrush(Qt::white), 3));
+    setBrush(QBrush(normalColor));
+    QPainterPath path;
+    path.moveTo(rect.topLeft());
+    path.lineTo(rect.topRight());
+    path.lineTo(rect.right() + tipOffset, rect.center().y());
+    path.lineTo(rect.bottomRight());
+    path.lineTo(rect.bottomLeft());
+    path.lineTo(rect.left() + tipOffset, rect.center().y());
     path.closeSubpath();
     setPath(path);
 }
@@ -580,14 +596,52 @@ void RoundaboutTestSliceItem::hoverLeaveEvent(QGraphicsSceneHoverEvent * event)
 
 RoundaboutTestConductorItem::RoundaboutTestConductorItem(QGraphicsItem *parent, QGraphicsScene *scene) :
     QGraphicsPathItem(parent, scene),
-    RoundaboutTestConnectable(true, false)
+    RoundaboutTestConnectable(true, false),
+    normalColor("steelblue"),
+    anchor(45, 90),
+    angle(90)
 {
+    setPen(QPen(QBrush(Qt::white), 3));
+    setBrush(QBrush(normalColor));
+    QPainterPath path;
+    path.lineTo(30, 0);
+    path.lineTo(30, 90);
+    path.lineTo(0, 90);
+    path.closeSubpath();
+    setPath(path);
+    QRectF rectArrow(0, 0, 40, 30);
+    RoundaboutTestArrowItem *arrowItem = new RoundaboutTestArrowItem(rectArrow, 17, this);
+    arrowItem->setRotation(90);
+    arrowItem->setPos(30, 0);
 }
 
 QPointF RoundaboutTestConductorItem::getConnectionAnchor(RoundaboutTestConnectionPoint point, qreal &angle) const
 {
     angle = this->angle;
-    return anchor;
+    return mapToScene(anchor);
+}
+
+RoundaboutTestConnectable * RoundaboutTestConductorItem::getConnectableAt(QPointF scenePos)
+{
+    return this;
+}
+
+void RoundaboutTestConductorItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
+    event->accept();
+}
+
+void RoundaboutTestConductorItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+{
+    if (QLineF(event->screenPos(), event->buttonDownScreenPos(Qt::LeftButton)).length() < QApplication::startDragDistance()) {
+        return;
+    }
+    if (!getConnectionItem()) {
+        setConnectionItem(P1, ((RoundaboutScene*)scene())->createConnectionItem());
+        getConnectionItem()->startMove(P2, event->scenePos());
+    } else {
+        getConnectionItem()->startMove(getConnectionPoint(), event->scenePos());
+    }
 }
 
 RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent, QGraphicsScene *scene) :

@@ -18,6 +18,7 @@
  */
 
 #include "roundaboutscene.h"
+#include "roundabouttestitem.h"
 #include <QGraphicsSceneMouseEvent>
 
 RoundaboutTestConnectable::RoundaboutTestConnectable(bool canConnectP1_, bool canConnectP2_) :
@@ -62,9 +63,9 @@ void RoundaboutTestConnectable::disconnected()
 {
 }
 
-RoundaboutTestConnectionItem::RoundaboutTestConnectionItem(QColor color_, qreal width_, QGraphicsItem *parent, QGraphicsScene *scene) :
+RoundaboutTestConnectionItem::RoundaboutTestConnectionItem(qreal width_, QGraphicsItem *parent, QGraphicsScene *scene) :
     QGraphicsPathItem(parent, scene),
-    color(color_),
+    color("steelblue"),
     angle1(0),
     angle2(0),
     width(width_),
@@ -205,11 +206,27 @@ QPainterPath RoundaboutTestConnectionItem::createConnectionPath(QPointF p1, qrea
 }
 
 RoundaboutScene::RoundaboutScene(QObject *parent) :
-    QGraphicsScene(parent)
+    QGraphicsScene(parent),
+    nextCirclePosition(200, 400),
+    nextConductorPosition(0, 0)
 {
 }
 
-RoundaboutTestConnectionItem * RoundaboutScene::createConnectionItem(QColor color, qreal width)
+RoundaboutTestConnectionItem * RoundaboutScene::createConnectionItem()
 {
-    return new RoundaboutTestConnectionItem(color, width, 0, this);
+    return new RoundaboutTestConnectionItem(27, 0, this);
+}
+
+void RoundaboutScene::createCircle()
+{
+    RoundaboutTestItem *item = new RoundaboutTestItem(0, this);
+    item->setPos(nextCirclePosition);
+    nextCirclePosition += QPointF(item->boundingRect().width() + 50, 0);
+}
+
+void RoundaboutScene::createConductor()
+{
+    RoundaboutTestConductorItem *item = new RoundaboutTestConductorItem(0, this);
+    item->setPos(nextConductorPosition);
+    nextConductorPosition += QPointF(item->boundingRect().width(), 0);
 }

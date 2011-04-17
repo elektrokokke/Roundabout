@@ -3,4 +3,7 @@
         <file alias="circle.svg">images/noun_project_149_1.svg</file>
         <file alias="director.svg">images/noun_project_166.svg</file>
     </qresource>
+    <qresource prefix="/png">
+        <file>images/smiling_alien_32x32.png</file>
+    </qresource>
 </RCC>

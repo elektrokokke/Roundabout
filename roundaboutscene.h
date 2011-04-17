@@ -57,7 +57,7 @@ public:
 class RoundaboutTestConnectionItem : public QGraphicsPathItem
 {
 public:
-    RoundaboutTestConnectionItem(QColor color, qreal width, QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);
+    RoundaboutTestConnectionItem(qreal width, QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);
     void setConnectable(RoundaboutTestConnectionPoint point, RoundaboutTestConnectable *connectable);
     void movedConnectable(RoundaboutTestConnectionPoint point);
     void startMove(RoundaboutTestConnectionPoint point, QPointF scenePos);
@@ -81,13 +81,13 @@ class RoundaboutScene : public QGraphicsScene
     Q_OBJECT
 public:
     explicit RoundaboutScene(QObject *parent = 0);
-
-    RoundaboutTestConnectionItem *createConnectionItem(QColor color, qreal width);
-
+    RoundaboutTestConnectionItem *createConnectionItem();
+    void createCircle();
+    void createConductor();
 signals:
-
 public slots:
-
+private:
+    QPointF nextCirclePosition, nextConductorPosition;
 };
 
 #endif // ROUNDABOUTSCENE_H

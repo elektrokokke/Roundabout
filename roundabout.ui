@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Roundabout</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="roundabout.qrc">
+    <normaloff>:/png/images/smiling_alien_32x32.png</normaloff>:/png/images/smiling_alien_32x32.png</iconset>
+  </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <property name="spacing">
@@ -48,6 +52,13 @@
      <height>21</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <property name="sizePolicy">
@@ -79,6 +90,8 @@
    </attribute>
    <addaction name="actionCreate_roundabout"/>
    <addaction name="actionCreate_conductor"/>
+   <addaction name="separator"/>
+   <addaction name="actionAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionCreate_conductor">
@@ -97,6 +110,15 @@
    </property>
    <property name="text">
     <string>Create roundabout</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="icon">
+    <iconset resource="roundabout.qrc">
+     <normaloff>:/png/images/smiling_alien_32x32.png</normaloff>:/png/images/smiling_alien_32x32.png</iconset>
+   </property>
+   <property name="text">
+    <string>About Roundabout</string>
    </property>
   </action>
  </widget>

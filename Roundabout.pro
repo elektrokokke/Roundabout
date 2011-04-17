@@ -6,6 +6,8 @@
 
 QT       += core gui
 
+win32:RC_FILE = roundabout.rc
+
 TARGET = Roundabout
 TEMPLATE = app
 
@@ -23,7 +25,8 @@ FORMS    += roundabout.ui
 
 OTHER_FILES += \
     README \
-    license.txt
+    license.txt \
+    roundabout.rc
 
 RESOURCES += \
     roundabout.qrc

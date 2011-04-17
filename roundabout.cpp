@@ -19,7 +19,7 @@
 
 #include "roundabout.h"
 #include "ui_roundabout.h"
-#include "roundabouttestitem.h"
+#include <QMessageBox>
 
 Roundabout::Roundabout(QWidget *parent) :
     QMainWindow(parent),
@@ -38,8 +38,15 @@ Roundabout::~Roundabout()
 
 void Roundabout::on_actionCreate_roundabout_triggered()
 {
-    // add a test item to the scene:
-    RoundaboutTestItem *testItem = new RoundaboutTestItem(0, &roundaboutScene);
-    testItem->setPos(nextItemPosition);
-    nextItemPosition += QPointF(testItem->rect().width() + 50, 0);
+    roundaboutScene.createCircle();
+}
+
+void Roundabout::on_actionCreate_conductor_triggered()
+{
+    roundaboutScene.createConductor();
+}
+
+void Roundabout::on_actionAbout_triggered()
+{
+    QMessageBox::about(this, "About Roundabout", "Copyright 2011 Arne Jacobs <jarne@jarne.de>\n\nRoundabout is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nRoundabout is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License\nalong with Roundabout.  If not, see <http://www.gnu.org/licenses/>.");
 }

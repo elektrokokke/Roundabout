@@ -110,8 +110,8 @@ class RoundaboutTestArrowItem : public QGraphicsPathItem
 {
 public:
     RoundaboutTestArrowItem(QRectF innerRect, QRectF outerRect, qreal angle, qreal tipOffset, QGraphicsItem *parent = 0);
+    RoundaboutTestArrowItem(QRectF rect, qreal tipOffset, QGraphicsItem *parent = 0);
 private:
-    QRectF rect;
     QColor normalColor;
 };
 
@@ -160,12 +160,17 @@ private:
     RoundaboutTestSegmentItem *segmentItem;
 };
 
-class RoundaboutTestConductorItem : public QGraphicsPathItem, public RoundaboutTestConnectable
+class RoundaboutTestConductorItem : public QGraphicsPathItem, public RoundaboutTestConnectable, public RoundaboutTestConnectableHost
 {
 public:
     RoundaboutTestConductorItem(QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);
     virtual QPointF getConnectionAnchor(RoundaboutTestConnectionPoint point, qreal &angle) const;
+    virtual RoundaboutTestConnectable * getConnectableAt(QPointF scenePos);
+protected:
+    virtual void mousePressEvent(QGraphicsSceneMouseEvent *event);
+    virtual void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
 private:
+    QColor normalColor;
     QPointF anchor;
     qreal angle;
 };
