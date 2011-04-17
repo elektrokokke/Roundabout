@@ -7,6 +7,7 @@
 QT       += core gui
 
 win32:RC_FILE = roundabout.rc
+macx:ICON = myapp.icns
 
 TARGET = Roundabout
 TEMPLATE = app
@@ -26,7 +27,8 @@ FORMS    += roundabout.ui
 OTHER_FILES += \
     README \
     license.txt \
-    roundabout.rc
+    roundabout.rc \
+    roundabout.ico
 
 RESOURCES += \
     roundabout.qrc
