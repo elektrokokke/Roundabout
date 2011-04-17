@@ -98,19 +98,26 @@ void RoundaboutTestConnectionItem::movedConnectable(RoundaboutTestConnectionPoin
     if (point == P1) {
         Q_ASSERT(connectable1);
         p1 = connectable1->getConnectionAnchor(point, angle1);
+        if (!connectable2) {
+            p2 = p1;
+            angle2 = angle1;
+        }
         setPath(createConnectionPath(p1, angle1, p2, angle2));
     } else {
         Q_ASSERT(connectable2);
         p2 = connectable2->getConnectionAnchor(point, angle2);
+        if (!connectable1) {
+            p1 = p2;
+            angle1 = angle2;
+        }
         setPath(createConnectionPath(p1, angle1, p2, angle2));
     }
 }
 
-void RoundaboutTestConnectionItem::startMove(RoundaboutTestConnectionPoint  point, QPointF scenePos)
+void RoundaboutTestConnectionItem::startMove(RoundaboutTestConnectionPoint  point)
 {
     grabMouse();
     movingPoint = point;
-    setPoint(movingPoint, mapFromScene(scenePos));
 }
 
 void RoundaboutTestConnectionItem::setPoint(RoundaboutTestConnectionPoint  point, QPointF p, qreal angle)
@@ -207,8 +214,8 @@ QPainterPath RoundaboutTestConnectionItem::createConnectionPath(QPointF p1, qrea
 
 RoundaboutScene::RoundaboutScene(QObject *parent) :
     QGraphicsScene(parent),
-    nextCirclePosition(200, 400),
-    nextConductorPosition(0, 0)
+    nextCirclePosition(200, 200),
+    nextConductorPosition(-100, 0)
 {
 }
 
@@ -221,12 +228,12 @@ void RoundaboutScene::createCircle()
 {
     RoundaboutTestItem *item = new RoundaboutTestItem(0, this);
     item->setPos(nextCirclePosition);
-    nextCirclePosition += QPointF(item->boundingRect().width() + 50, 0);
+    nextCirclePosition += QPointF(item->rect().width() + 50, 0);
 }
 
 void RoundaboutScene::createConductor()
 {
     RoundaboutTestConductorItem *item = new RoundaboutTestConductorItem(0, this);
     item->setPos(nextConductorPosition);
-    nextConductorPosition += QPointF(item->boundingRect().width(), 0);
+    nextConductorPosition += QPointF(0, item->rect().height());
 }

@@ -367,9 +367,9 @@ void RoundaboutTestSegmentItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     setHighlight(highlight);
     if (!getConnectionItem()) {
         setConnectionItem(P1, ((RoundaboutScene*)scene())->createConnectionItem());
-        getConnectionItem()->startMove(P2, event->scenePos());
+        getConnectionItem()->startMove(P2);
     } else {
-        getConnectionItem()->startMove(getConnectionPoint(), event->scenePos());
+        getConnectionItem()->startMove(getConnectionPoint());
     }
 }
 
@@ -595,24 +595,16 @@ void RoundaboutTestSliceItem::hoverLeaveEvent(QGraphicsSceneHoverEvent * event)
 }
 
 RoundaboutTestConductorItem::RoundaboutTestConductorItem(QGraphicsItem *parent, QGraphicsScene *scene) :
-    QGraphicsPathItem(parent, scene),
+    QGraphicsRectItem(QRectF(0, 0, 90, 30), parent, scene),
     RoundaboutTestConnectable(true, false),
     normalColor("steelblue"),
-    anchor(45, 90),
-    angle(90)
+    anchor(88, 15),
+    angle(0)
 {
     setPen(QPen(QBrush(Qt::white), 3));
     setBrush(QBrush(normalColor));
-    QPainterPath path;
-    path.lineTo(30, 0);
-    path.lineTo(30, 90);
-    path.lineTo(0, 90);
-    path.closeSubpath();
-    setPath(path);
     QRectF rectArrow(0, 0, 40, 30);
-    RoundaboutTestArrowItem *arrowItem = new RoundaboutTestArrowItem(rectArrow, 17, this);
-    arrowItem->setRotation(90);
-    arrowItem->setPos(30, 0);
+    new RoundaboutTestArrowItem(rectArrow, 17, this);
 }
 
 QPointF RoundaboutTestConductorItem::getConnectionAnchor(RoundaboutTestConnectionPoint point, qreal &angle) const
@@ -638,9 +630,9 @@ void RoundaboutTestConductorItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event
     }
     if (!getConnectionItem()) {
         setConnectionItem(P1, ((RoundaboutScene*)scene())->createConnectionItem());
-        getConnectionItem()->startMove(P2, event->scenePos());
+        getConnectionItem()->startMove(P2);
     } else {
-        getConnectionItem()->startMove(getConnectionPoint(), event->scenePos());
+        getConnectionItem()->startMove(getConnectionPoint());
     }
 }
 

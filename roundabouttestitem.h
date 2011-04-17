@@ -160,7 +160,7 @@ private:
     RoundaboutTestSegmentItem *segmentItem;
 };
 
-class RoundaboutTestConductorItem : public QGraphicsPathItem, public RoundaboutTestConnectable, public RoundaboutTestConnectableHost
+class RoundaboutTestConductorItem : public QGraphicsRectItem, public RoundaboutTestConnectable, public RoundaboutTestConnectableHost
 {
 public:
     RoundaboutTestConductorItem(QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);

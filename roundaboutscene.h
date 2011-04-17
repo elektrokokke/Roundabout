@@ -60,7 +60,7 @@ public:
     RoundaboutTestConnectionItem(qreal width, QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);
     void setConnectable(RoundaboutTestConnectionPoint point, RoundaboutTestConnectable *connectable);
     void movedConnectable(RoundaboutTestConnectionPoint point);
-    void startMove(RoundaboutTestConnectionPoint point, QPointF scenePos);
+    void startMove(RoundaboutTestConnectionPoint point);
 protected:
     void setPoint(RoundaboutTestConnectionPoint point, QPointF pos, qreal angle);
     void setPoint(RoundaboutTestConnectionPoint point, QPointF pos);
