@@ -13,19 +13,11 @@ TEMPLATE = app
 SOURCES += main.cpp\
         roundabout.cpp \
     roundaboutscene.cpp \
-    roundabouttestitem.cpp \
-    stylehelper.cpp \
-    manhattanstyle.cpp \
-    styleanimator.cpp \
-    fancymainwindow.cpp
+    roundabouttestitem.cpp
 
 HEADERS  += roundabout.h \
     roundaboutscene.h \
-    roundabouttestitem.h \
-    stylehelper.h \
-    manhattanstyle.h \
-    styleanimator.h \
-    fancymainwindow.h
+    roundabouttestitem.h
 
 FORMS    += roundabout.ui
 
