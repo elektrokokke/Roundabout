@@ -505,54 +505,60 @@ void RoundaboutTestKeyItem::mousePressEvent(QGraphicsSceneMouseEvent * event)
     setHighlight(highlight);
 }
 
-RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(QRectF innerRect, QRectF outerRect, Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent) :
+RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(QRectF innerMostRect, QRectF outerMostRect, Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent) :
     QGraphicsPathItem(parent)
 {
     setPen(QPen(Qt::NoPen));
     setBrush(QBrush(Qt::NoBrush));
-    // white keys:
-    int keys = 8;
-    qreal keyWidth = 1.0 / (qreal)keys;
-    for (int i = 0; i < keys; i++) {
-        qreal from = (qreal)i / (qreal)keys;
-        qreal to = from + keyWidth;
-        if (dir == OUTER_TO_INNER) {
-            from = 1.0 - from;
-            to = 1.0 - to;
+    int octaves = 1;
+    for (int i = 0; i < octaves; i++) {
+        QRectF innerRect = (1.0 - (qreal)i / (qreal)octaves) * innerMostRect + (qreal)i / (qreal)octaves * outerMostRect;
+        QRectF outerRect = (qreal)(octaves - i - 1) / (qreal)octaves * innerMostRect + (1.0 - (qreal)(octaves - i - 1) / (qreal)octaves) * outerMostRect;
+
+        // white keys:
+        int keys = 8;
+        qreal keyWidth = 1.0 / (qreal)keys;
+        for (int i = 0; i < keys; i++) {
+            qreal from = (qreal)i / (qreal)keys;
+            qreal to = from + keyWidth;
+            if (dir == OUTER_TO_INNER) {
+                from = 1.0 - from;
+                to = 1.0 - to;
+            }
+            QRectF outerKeyRect = (1.0 - from) * innerRect + from * outerRect;
+            QRectF innerKeyRect = (1.0 - to) * innerRect + to * outerRect;
+            RoundaboutTestKeyItem *keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle, arcLength, RoundaboutTestKeyItem::WHITE, this);
+            keyItems.append(keyItem);
         }
-        QRectF outerKeyRect = (1.0 - from) * innerRect + from * outerRect;
-        QRectF innerKeyRect = (1.0 - to) * innerRect + to * outerRect;
-        RoundaboutTestKeyItem *keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle, arcLength, RoundaboutTestKeyItem::WHITE, this);
-        keyItems.append(keyItem);
-    }
-    // black keys:
-    qreal blackKeyArcLength = 0.6 * arcLength;
-    qreal blackKeyWidth = 0.75 * keyWidth;
-    QVector<qreal> blackKeys;
-    blackKeys.append((3.0 * keyWidth - 2.0 * blackKeyWidth) / 3.0);
-    blackKeys.append((3.0 * keyWidth - 2.0 * blackKeyWidth) / 3.0 * 2.0 + blackKeyWidth);
-    blackKeys.append(keyWidth * 3.0 + (4.0 * keyWidth - 3.0 * blackKeyWidth) / 4.0);
-    blackKeys.append(keyWidth * 3.0 + (4.0 * keyWidth - 3.0 * blackKeyWidth) / 4.0 * 2.0 + blackKeyWidth);
-    blackKeys.append(keyWidth * 3.0 + (4.0 * keyWidth - 3.0 * blackKeyWidth) / 4.0 * 3.0 + blackKeyWidth * 2.0);
-    for (int i = 0; i < blackKeys.size(); i++) {
-        qreal from = blackKeys[i];
-        qreal to = from + blackKeyWidth;
-        if (dir == OUTER_TO_INNER) {
-            from = 1.0 - from;
-            to = 1.0 - to;
+        // black keys:
+        qreal blackKeyArcLength = 0.6 * arcLength;
+        qreal blackKeyWidth = 0.75 * keyWidth;
+        QVector<qreal> blackKeys;
+        blackKeys.append((3.0 * keyWidth - 2.0 * blackKeyWidth) / 3.0);
+        blackKeys.append((3.0 * keyWidth - 2.0 * blackKeyWidth) / 3.0 * 2.0 + blackKeyWidth);
+        blackKeys.append(keyWidth * 3.0 + (4.0 * keyWidth - 3.0 * blackKeyWidth) / 4.0);
+        blackKeys.append(keyWidth * 3.0 + (4.0 * keyWidth - 3.0 * blackKeyWidth) / 4.0 * 2.0 + blackKeyWidth);
+        blackKeys.append(keyWidth * 3.0 + (4.0 * keyWidth - 3.0 * blackKeyWidth) / 4.0 * 3.0 + blackKeyWidth * 2.0);
+        for (int i = 0; i < blackKeys.size(); i++) {
+            qreal from = blackKeys[i];
+            qreal to = from + blackKeyWidth;
+            if (dir == OUTER_TO_INNER) {
+                from = 1.0 - from;
+                to = 1.0 - to;
+            }
+            QRectF outerKeyRect = (1.0 - from) * innerRect + from * outerRect;
+            QRectF innerKeyRect = (1.0 - to) * innerRect + to * outerRect;
+            RoundaboutTestKeyItem *keyItem;
+            if (dir == INNER_TO_OUTER) {
+                keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle, blackKeyArcLength, RoundaboutTestKeyItem::BLACK, this);
+            } else {
+                keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle + arcLength - blackKeyArcLength, blackKeyArcLength, RoundaboutTestKeyItem::BLACK, this);
+            }
+            for (int j = 0; j < keyItems.size(); j++) {
+                keyItems[j]->setPath(keyItems[j]->path() - keyItem->path());
+            }
+            keyItems.append(keyItem);
         }
-        QRectF outerKeyRect = (1.0 - from) * innerRect + from * outerRect;
-        QRectF innerKeyRect = (1.0 - to) * innerRect + to * outerRect;
-        RoundaboutTestKeyItem *keyItem;
-        if (dir == INNER_TO_OUTER) {
-            keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle, blackKeyArcLength, RoundaboutTestKeyItem::BLACK, this);
-        } else {
-            keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle + arcLength - blackKeyArcLength, blackKeyArcLength, RoundaboutTestKeyItem::BLACK, this);
-        }
-        for (int j = 0; j < keys; j++) {
-            keyItems[j]->setPath(keyItems[j]->path() - keyItem->path());
-        }
-        keyItems.append(keyItem);
     }
 }
 
