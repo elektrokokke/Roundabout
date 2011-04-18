@@ -21,6 +21,8 @@
  */
 
 #include <QMainWindow>
+#include <QSplashScreen>
+#include <QTimer>
 #include "roundaboutscene.h"
 
 namespace Ui {
@@ -42,6 +44,8 @@ private slots:
 
 private:
     Ui::Roundabout *ui;
+    QSplashScreen splashScreen;
+    QTimer splashTimer;
     RoundaboutScene roundaboutScene;
 };
 

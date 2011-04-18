@@ -18,8 +18,6 @@
  */
 
 #include <QtGui/QApplication>
-#include <QSplashScreen>
-#include <QTimer>
 #include "roundabout.h"
 
 int main(int argc, char *argv[])
@@ -27,14 +25,6 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
 
     Roundabout w;
-
-    QPixmap pixmap(":/png/images/splash.png");
-    QSplashScreen splash(pixmap, Qt::WindowStaysOnTopHint);
-    QTimer splashTimer;
-    QObject::connect(&splashTimer, SIGNAL(timeout()), &splash, SLOT(close()));
-    splash.show();
-    splashTimer.start(2000);
-
     w.show();
 
 

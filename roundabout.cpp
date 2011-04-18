@@ -19,16 +19,19 @@
 
 #include "roundabout.h"
 #include "ui_roundabout.h"
-#include <QMessageBox>
 
 Roundabout::Roundabout(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::Roundabout)
+    ui(new Ui::Roundabout),
+    splashScreen(QPixmap(":/png/images/splash.png"), Qt::WindowStaysOnTopHint)
 {
     ui->setupUi(this);
     ui->graphicsView->setRenderHint(QPainter::Antialiasing);
     // display our RoundaboutScene in the graphics view:
     ui->graphicsView->setScene(&roundaboutScene);
+    QObject::connect(&splashTimer, SIGNAL(timeout()), &splashScreen, SLOT(close()));
+    splashScreen.show();
+    splashTimer.start(2000);
 }
 
 Roundabout::~Roundabout()
@@ -48,5 +51,6 @@ void Roundabout::on_actionCreate_conductor_triggered()
 
 void Roundabout::on_actionAbout_triggered()
 {
-    QMessageBox::about(this, "About Roundabout", "Copyright 2011 Arne Jacobs <jarne@jarne.de>\n\nRoundabout is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nRoundabout is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License\nalong with Roundabout.  If not, see <http://www.gnu.org/licenses/>.");
+    splashScreen.show();
+    splashTimer.start(5000);
 }
