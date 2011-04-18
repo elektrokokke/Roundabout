@@ -74,7 +74,7 @@ RoundaboutTestConnectionItem::RoundaboutTestConnectionItem(qreal width_, QGraphi
 {
     setPen(QPen(QBrush(color), width, Qt::SolidLine, Qt::FlatCap));
     setBrush(QBrush(Qt::NoBrush));
-    setZValue(1);
+    setZValue(-1);
 }
 
 void RoundaboutTestConnectionItem::setConnectable(RoundaboutTestConnectionPoint  point, RoundaboutTestConnectable *connectable)

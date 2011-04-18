@@ -22,6 +22,7 @@
 
 #include "roundaboutscene.h"
 #include <QGraphicsEllipseItem>
+#include <QGraphicsProxyWidget>
 #include <QTimer>
 
 class RoundaboutTestSwitchEditItem : public QGraphicsPathItem

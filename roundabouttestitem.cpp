@@ -28,6 +28,7 @@
 #include <QPixmap>
 #include <QBitmap>
 #include <QCursor>
+#include <QSpinBox>
 #include <QApplication>
 #include <cmath>
 
@@ -263,6 +264,7 @@ RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(QRectF innerRect, QRectF ou
     setPen(QPen(QBrush(Qt::white), 3));
     setHighlight(false);
     setAcceptHoverEvents(true);
+    setAcceptedMouseButtons(Qt::LeftButton);
     setCursor(Qt::ArrowCursor);
     setFlag(QGraphicsItem::ItemSendsGeometryChanges);
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
@@ -383,7 +385,7 @@ void RoundaboutTestSegmentItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     if (QLineF(event->screenPos(), event->buttonDownScreenPos(Qt::LeftButton)).length() < QApplication::startDragDistance()) {
         return;
     }
-    state = true;
+    state = !state;
     setHighlight(highlight);
     if (!getConnectionItem()) {
         setConnectionItem(P1, ((RoundaboutScene*)scene())->createConnectionItem());
@@ -457,6 +459,7 @@ RoundaboutTestKeyItem::RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect,
     setBrush(QBrush(normalColor));
     setFlag(QGraphicsItem::ItemIgnoresParentOpacity, state);
     setAcceptHoverEvents(true);
+    setAcceptedMouseButtons(Qt::LeftButton);
     setPath(createSegmentPath(innerRect, outerRect, startAngle, arcLength));
 }
 
@@ -630,6 +633,7 @@ RoundaboutTestConductorItem::RoundaboutTestConductorItem(QGraphicsItem *parent, 
     setPen(QPen(QBrush(Qt::white), 3));
     setBrush(QBrush(normalColor));
     setCursor(Qt::ArrowCursor);
+    setAcceptedMouseButtons(Qt::LeftButton);
     QRectF rectArrow(0, 0, 40, 30);
     new RoundaboutTestArrowItem(rectArrow, 17, this);
 }
