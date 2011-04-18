@@ -263,6 +263,7 @@ RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(QRectF innerRect, QRectF ou
     setPen(QPen(QBrush(Qt::white), 3));
     setHighlight(false);
     setAcceptHoverEvents(true);
+    setCursor(Qt::ArrowCursor);
     setFlag(QGraphicsItem::ItemSendsGeometryChanges);
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
 
@@ -622,6 +623,7 @@ RoundaboutTestConductorItem::RoundaboutTestConductorItem(QGraphicsItem *parent, 
 {
     setPen(QPen(QBrush(Qt::white), 3));
     setBrush(QBrush(normalColor));
+    setCursor(Qt::ArrowCursor);
     QRectF rectArrow(0, 0, 40, 30);
     new RoundaboutTestArrowItem(rectArrow, 17, this);
 }
@@ -665,6 +667,7 @@ RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent, QGraphicsScene *sc
     setPen(QPen(Qt::NoPen));
     setBrush(QBrush(Qt::NoBrush));
     setAcceptHoverEvents(true);
+    setCursor(Qt::ArrowCursor);
     QRectF innerRect(-200, -200, 400, 400);
     // create a circle in the center:
     new RoundaboutTestCenterItem(0.25 * innerRect, this);
