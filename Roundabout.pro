@@ -16,11 +16,13 @@ TEMPLATE = app
 SOURCES += main.cpp\
         roundabout.cpp \
     roundaboutscene.cpp \
-    roundabouttestitem.cpp
+    roundabouttestitem.cpp \
+    wheelzoominggraphicsview.cpp
 
 HEADERS  += roundabout.h \
     roundaboutscene.h \
-    roundabouttestitem.h
+    roundabouttestitem.h \
+    wheelzoominggraphicsview.h
 
 FORMS    += roundabout.ui
 

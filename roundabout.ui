@@ -26,7 +26,7 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="QGraphicsView" name="graphicsView">
+     <widget class="WheelZoomingGraphicsView" name="graphicsView">
       <property name="frameShape">
        <enum>QFrame::StyledPanel</enum>
       </property>
@@ -123,6 +123,13 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>WheelZoomingGraphicsView</class>
+   <extends>QGraphicsView</extends>
+   <header>wheelzoominggraphicsview.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="roundabout.qrc"/>
  </resources>
