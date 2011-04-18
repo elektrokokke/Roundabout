@@ -5,5 +5,6 @@
     </qresource>
     <qresource prefix="/png">
         <file>images/smiling_alien_32x32.png</file>
+        <file>images/splash.png</file>
     </qresource>
 </RCC>
