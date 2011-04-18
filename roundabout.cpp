@@ -26,6 +26,10 @@ Roundabout::Roundabout(QWidget *parent) :
     splashScreen(QPixmap(":/png/images/splash.png"), Qt::WindowStaysOnTopHint)
 {
     ui->setupUi(this);
+    QActionGroup *toolGroup = new QActionGroup(this);
+    toolGroup->addAction(ui->actionTool1);
+    toolGroup->addAction(ui->actionTool2);
+    toolGroup->addAction(ui->actionTool3);
     ui->graphicsView->setRenderHint(QPainter::Antialiasing);
     // display our RoundaboutScene in the graphics view:
     ui->graphicsView->setScene(&roundaboutScene);
