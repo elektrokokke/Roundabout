@@ -24,6 +24,14 @@
 #include <QGraphicsEllipseItem>
 #include <QTimer>
 
+class RoundaboutTestSwitchEditItem : public QGraphicsPathItem
+{
+public:
+    RoundaboutTestSwitchEditItem(QGraphicsItem *parent = 0);
+private:
+    QColor normalColor, backgroundColor;
+};
+
 class RoundaboutTestPlayItem : public QObject, public QGraphicsPathItem
 {
     Q_OBJECT

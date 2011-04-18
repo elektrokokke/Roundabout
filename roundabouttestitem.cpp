@@ -71,6 +71,25 @@ QPainterPath createSegmentPath(QRectF innerRect, QRectF outerRect, qreal startAn
     return path;
 }
 
+RoundaboutTestSwitchEditItem::RoundaboutTestSwitchEditItem(QGraphicsItem *parent) :
+    QGraphicsPathItem(parent),
+    normalColor("steelblue"),
+    backgroundColor("lightsteelblue")
+{
+    setPen(QPen(QBrush(Qt::white), 3));
+    setBrush(normalColor);
+    setAcceptHoverEvents(true);
+    QPainterPath path;
+    path.addEllipse(QRectF(-50, -50, 100, 100));
+    QGraphicsEllipseItem *topEllipse = new QGraphicsEllipseItem(QRectF(-25, -50, 50, 50), this);
+    topEllipse->setPen(QPen(QBrush(Qt::white), 3));
+    topEllipse->setBrush(backgroundColor);
+    QGraphicsEllipseItem *bottomEllipse = new QGraphicsEllipseItem(QRectF(-25, 0, 50, 50), this);
+    bottomEllipse->setPen(QPen(QBrush(Qt::white), 3));
+    bottomEllipse->setBrush(backgroundColor);
+    setPath(path);
+}
+
 RoundaboutTestPlayItem::RoundaboutTestPlayItem(QRectF rect, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
     normalColor("steelblue"),
