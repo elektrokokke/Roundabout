@@ -20,12 +20,15 @@ SOURCES += main.cpp\
         roundabout.cpp \
     roundaboutscene.cpp \
     roundabouttestitem.cpp \
-    wheelzoominggraphicsview.cpp
+    wheelzoominggraphicsview.cpp \
+    roundaboutthread.cpp
 
 HEADERS  += roundabout.h \
     roundaboutscene.h \
     roundabouttestitem.h \
-    wheelzoominggraphicsview.h
+    wheelzoominggraphicsview.h \
+    roundaboutthread.h \
+    ringbuffer.h
 
 FORMS    += roundabout.ui
 
