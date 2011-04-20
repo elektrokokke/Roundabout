@@ -99,19 +99,11 @@
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionCreate_conductor">
-   <property name="icon">
-    <iconset resource="roundabout.qrc">
-     <normaloff>:/svg/director.svg</normaloff>:/svg/director.svg</iconset>
-   </property>
    <property name="text">
     <string>Create director</string>
    </property>
   </action>
   <action name="actionCreate_roundabout">
-   <property name="icon">
-    <iconset resource="roundabout.qrc">
-     <normaloff>:/svg/circle.svg</normaloff>:/svg/circle.svg</iconset>
-   </property>
    <property name="text">
     <string>Create roundabout</string>
    </property>
