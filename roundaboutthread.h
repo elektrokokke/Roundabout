@@ -27,19 +27,6 @@
 #include <jack/jack.h>
 #include "ringbuffer.h"
 
-class OutboundEventsInterface
-{
-public:
-    /**
-      "Outbound" events are events that are sent
-      from the process thread to other threads.
-
-      This function will be called from outside the
-      process thread.
-      */
-    virtual void processOutboundEvents() = 0;
-};
-
 class InboundEventsInterface
 {
 public:
@@ -53,37 +40,91 @@ public:
     virtual void processInboundEvents() = 0;
 };
 
-class RoundaboutThread : public QThread, public OutboundEventsInterface, public InboundEventsInterface
+template<class T> class InboundEventsHelper : public InboundEventsInterface
+{
+public:
+    InboundEventsHelper() : ringbuffer(1024) {}
+    bool hasInboundEvents() const { return ringbuffer.readSpace(); }
+    T readInboundEvent() { return ringbuffer.read(); }
+    void writeInboundEvent(T &event) { ringbuffer.write(event); }
+    virtual void processInboundEvents() {
+        for (; hasInboundEvents(); ) {
+            T event = readInboundEvent();
+            processInboundEvent(event);
+        }
+    }
+protected:
+    virtual void processInboundEvent(T &event) = 0;
+private:
+    Ringbuffer<T> ringbuffer;
+};
+
+class OutboundEventsInterface
+{
+public:
+    /**
+      "Outbound" events are events that are sent
+      from the process thread to other threads.
+
+      This function will be called from outside the
+      process thread.
+      */
+    virtual void processOutboundEvents() = 0;
+};
+
+template<class T> class OutboundEventsHelper : public OutboundEventsInterface
+{
+public:
+    OutboundEventsHelper() : ringbuffer(1024) {}
+    bool hasOutboundEvents() const { return ringbuffer.readSpace(); }
+    T readOutboundEvent() { return ringbuffer.read(); }
+    void writeOutboundEvent(T &event) { ringbuffer.write(event); }
+    virtual void processOutboundEvents() {
+        for (; hasOutboundEvents(); ) {
+            T event = readOutboundEvent();
+            processOutboundEvent(event);
+        }
+    }
+protected:
+    virtual void processOutboundEvent(T &event) = 0;
+private:
+    Ringbuffer<T> ringbuffer;
+};
+
+class RoundaboutSequencer;
+
+struct RoundaboutThreadInboundEvent {
+    enum EventType {
+        CREATE_SEQUENCER
+    } eventType;
+    RoundaboutSequencer *sequencer;
+};
+struct RoundaboutThreadOutboundEvent {
+    enum EventType {
+        SHUTDOWN
+    } eventType;
+};
+
+class RoundaboutThread : public QThread, public InboundEventsHelper<RoundaboutThreadInboundEvent>, public OutboundEventsHelper<RoundaboutThreadOutboundEvent>
 {
     Q_OBJECT
 public:
-    struct InboundEvent {
-        enum EventType {
-            CREATE_SEQUENCER
-        } eventType;
-    };
-    struct OutboundEvent {
-        enum EventType {
-            CREATED_SEQUENCER,
-            SHUTDOWN
-        } eventType;
-    };
     RoundaboutThread(QObject *parent = 0);
     virtual ~RoundaboutThread();
     bool isValid() const;
-    // Reimplemented from EventsAcrossThreadBoundariesInterface:
-    virtual void processOutboundEvents();
     virtual void processInboundEvents();
+    virtual void processOutboundEvents();
 signals:
-    void createdSequencer();
 public slots:
     void createSequencer();
 protected:
     // Reimplemented from QThread:
     virtual void run();
+    // Reimplemented from InboundEventsHelper:
+    virtual void processInboundEvent(RoundaboutThreadInboundEvent &event);
+    // Reimplemented from OutboundEventsHelper:
+    virtual void processOutboundEvent(RoundaboutThreadOutboundEvent &event);
 private:
-    Ringbuffer<InboundEvent> inboundRingbuffer;
-    Ringbuffer<OutboundEvent> outboundRingbuffer;
     bool shutdown;
     QMutex outboundMutex;
     QWaitCondition outboundCondition;

@@ -21,14 +21,16 @@ SOURCES += main.cpp\
     roundaboutscene.cpp \
     roundabouttestitem.cpp \
     wheelzoominggraphicsview.cpp \
-    roundaboutthread.cpp
+    roundaboutthread.cpp \
+    roundaboutsequencer.cpp
 
 HEADERS  += roundabout.h \
     roundaboutscene.h \
     roundabouttestitem.h \
     wheelzoominggraphicsview.h \
     roundaboutthread.h \
-    ringbuffer.h
+    ringbuffer.h \
+    roundaboutsequencer.h
 
 FORMS    += roundabout.ui
 

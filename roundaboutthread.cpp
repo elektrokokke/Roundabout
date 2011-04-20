@@ -18,11 +18,10 @@
  */
 
 #include "roundaboutthread.h"
+#include "roundaboutsequencer.h"
 
 RoundaboutThread::RoundaboutThread(QObject *parent) :
     QThread(parent),
-    inboundRingbuffer(1024),
-    outboundRingbuffer(1024),
     shutdown(false),
     client(0)
 {
@@ -47,9 +46,9 @@ RoundaboutThread::~RoundaboutThread()
         // close the jack client:
         jack_client_close(client);
         // send a shutdown event to the QThread:
-        OutboundEvent event;
-        event.eventType = OutboundEvent::SHUTDOWN;
-        outboundRingbuffer.write(event);
+        RoundaboutThreadOutboundEvent event;
+        event.eventType = RoundaboutThreadOutboundEvent::SHUTDOWN;
+        writeOutboundEvent(event);
         outboundCondition.wakeAll();
         // wait for the thread to finish:
         wait();
@@ -64,14 +63,7 @@ bool RoundaboutThread::isValid() const
 void RoundaboutThread::processOutboundEvents()
 {
     // process our events:
-    for (; outboundRingbuffer.readSpace(); ) {
-        OutboundEvent event = outboundRingbuffer.read();
-        if (event.eventType == OutboundEvent::SHUTDOWN) {
-            shutdown = true;
-        } else if (event.eventType == OutboundEvent::CREATED_SEQUENCER) {
-            createdSequencer();
-        }
-    }
+    OutboundEventsHelper<RoundaboutThreadOutboundEvent>::processOutboundEvents();
     // process other events:
     for (int i = 0; i < outboundEventsInterfaces.size(); i++) {
         outboundEventsInterfaces[i]->processOutboundEvents();
@@ -80,13 +72,8 @@ void RoundaboutThread::processOutboundEvents()
 
 void RoundaboutThread::processInboundEvents()
 {
-    // process out events:
-    for (; inboundRingbuffer.readSpace(); ) {
-        InboundEvent event = inboundRingbuffer.read();
-        if (event.eventType == InboundEvent::CREATE_SEQUENCER) {
-            // TODO...
-        }
-    }
+    // process our events:
+    InboundEventsHelper<RoundaboutThreadInboundEvent>::processInboundEvents();
     // process other events:
     for (int i = 0; i < inboundEventsInterfaces.size(); i++) {
         inboundEventsInterfaces[i]->processInboundEvents();
@@ -95,9 +82,11 @@ void RoundaboutThread::processInboundEvents()
 
 void RoundaboutThread::createSequencer()
 {
-    InboundEvent event;
-    event.eventType = InboundEvent::CREATE_SEQUENCER;
-    inboundRingbuffer.write(event);
+    RoundaboutSequencer *sequencer = new RoundaboutSequencer(this);
+    RoundaboutThreadInboundEvent event;
+    event.eventType = RoundaboutThreadInboundEvent::CREATE_SEQUENCER;
+    event.sequencer = sequencer;
+    writeInboundEvent(event);
 }
 
 void RoundaboutThread::run()
@@ -107,6 +96,20 @@ void RoundaboutThread::run()
         outboundMutex.lock();
         outboundCondition.wait(&outboundMutex);
         processOutboundEvents();
+    }
+}
+
+void RoundaboutThread::processInboundEvent(RoundaboutThreadInboundEvent &event)
+{
+    if (event.eventType == RoundaboutThreadInboundEvent::CREATE_SEQUENCER) {
+        inboundEventsInterfaces.append(event.sequencer);
+    }
+}
+
+void RoundaboutThread::processOutboundEvent(RoundaboutThreadOutboundEvent &event)
+{
+    if (event.eventType == RoundaboutThreadOutboundEvent::SHUTDOWN) {
+        shutdown = true;
     }
 }
 
