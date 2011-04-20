@@ -43,7 +43,7 @@ public:
 template<class T> class InboundEventsHelper : public InboundEventsInterface
 {
 public:
-    InboundEventsHelper() : ringbuffer(1024) {}
+    InboundEventsHelper() : ringbuffer(4096) {}
     bool hasInboundEvents() const { return ringbuffer.readSpace(); }
     T readInboundEvent() { return ringbuffer.read(); }
     void writeInboundEvent(T &event) { ringbuffer.write(event); }
@@ -75,7 +75,7 @@ public:
 template<class T> class OutboundEventsHelper : public OutboundEventsInterface
 {
 public:
-    OutboundEventsHelper() : ringbuffer(1024) {}
+    OutboundEventsHelper() : ringbuffer(4096) {}
     bool hasOutboundEvents() const { return ringbuffer.readSpace(); }
     T readOutboundEvent() { return ringbuffer.read(); }
     void writeOutboundEvent(T &event) { ringbuffer.write(event); }
