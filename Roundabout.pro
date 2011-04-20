@@ -8,8 +8,8 @@ QT       += core gui
 
 win32:RC_FILE = roundabout.rc
 macx:ICON = roundabout.icns
-win32:INCLUDEPATH += "C:\\Program Files\\Jack v1.9.6\\includes"
-win32:LIBS += $$quote(c:\\Program Files\\Jack v1.9.6\\lib\\libjack.a) $$quote(c:\\Program Files\\Jack v1.9.6\\lib\\libjackserver.a)
+win32:INCLUDEPATH += "C:\\Program Files\\Jack v1.9.7\\includes"
+win32:LIBS += $$quote(c:\\Program Files\\Jack v1.9.7\\lib\\libjack.a) $$quote(c:\\Program Files\\Jack v1.9.7\\lib\\libjackserver.a)
 unix:LIBS += -ljack
 
 TARGET = Roundabout
