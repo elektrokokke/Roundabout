@@ -24,6 +24,7 @@
 #include <QSplashScreen>
 #include <QTimer>
 #include "roundaboutscene.h"
+#include "roundaboutthread.h"
 
 namespace Ui {
     class Roundabout;
@@ -34,7 +35,7 @@ class Roundabout : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit Roundabout(QWidget *parent = 0);
+    explicit Roundabout(RoundaboutThread *thread, QWidget *parent = 0);
     ~Roundabout();
 
 private slots:
@@ -47,6 +48,7 @@ private:
     QSplashScreen splashScreen;
     QTimer splashTimer;
     RoundaboutScene roundaboutScene;
+    RoundaboutThread *roundaboutThread;
 };
 
 #endif // ROUNDABOUT_H

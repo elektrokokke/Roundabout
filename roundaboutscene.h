@@ -24,6 +24,7 @@
 #include <QGraphicsPathItem>
 
 class RoundaboutTestConnectionItem;
+class RoundaboutSequencer;
 
 enum RoundaboutTestConnectionPoint {
     P1,
@@ -82,10 +83,10 @@ class RoundaboutScene : public QGraphicsScene
 public:
     explicit RoundaboutScene(QObject *parent = 0);
     RoundaboutTestConnectionItem *createConnectionItem();
-    void createCircle();
     void createConductor();
 signals:
 public slots:
+    void onCreatedSequencer(RoundaboutSequencer *sequencer);
 private:
     QPointF nextCirclePosition, nextConductorPosition;
 };

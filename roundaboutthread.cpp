@@ -25,11 +25,18 @@ RoundaboutThread::RoundaboutThread(QObject *parent) :
     shutdown(false),
     client(0)
 {
+    midiEventsOutput.reserve(4096);
+    inboundEventsInterfaces.reserve(1024);
+    sequencers.reserve(1024);
     // connect to the jack server:
     client = jack_client_open("Roundabout", JackNullOption, 0);
     if (client) {
+        bool success = true;
+        // register process callback:
+        success = success && (jack_set_process_callback(client, process, this) == 0);
         // start the jack client:
-        if (jack_activate(client)) {
+        success = success && (jack_activate(client) == 0);
+        if (!success) {
             jack_client_close(client);
             client = 0;
         }
@@ -83,43 +90,63 @@ void RoundaboutThread::processInboundEvents()
 void RoundaboutThread::createSequencer()
 {
     RoundaboutSequencer *sequencer = new RoundaboutSequencer(this);
-    RoundaboutThreadInboundEvent event;
-    event.eventType = RoundaboutThreadInboundEvent::CREATE_SEQUENCER;
-    event.sequencer = sequencer;
-    writeInboundEvent(event);
+    RoundaboutThreadInboundEvent inboundEvent;
+    inboundEvent.eventType = RoundaboutThreadInboundEvent::CREATE_SEQUENCER;
+    inboundEvent.sequencer = sequencer;
+    writeInboundEvent(inboundEvent);
 }
 
 void RoundaboutThread::run()
 {
     for (; !shutdown; ) {
         // wait for outbound events:
-        outboundMutex.lock();
+        QMutexLocker locker(&outboundMutex);
         outboundCondition.wait(&outboundMutex);
         processOutboundEvents();
     }
 }
 
-void RoundaboutThread::processInboundEvent(RoundaboutThreadInboundEvent &event)
+void RoundaboutThread::processInboundEvent(RoundaboutThreadInboundEvent &inboundEvent)
 {
-    if (event.eventType == RoundaboutThreadInboundEvent::CREATE_SEQUENCER) {
-        inboundEventsInterfaces.append(event.sequencer);
+    if (inboundEvent.eventType == RoundaboutThreadInboundEvent::CREATE_SEQUENCER) {
+        inboundEventsInterfaces.append(inboundEvent.sequencer);
+        sequencers.append(inboundEvent.sequencer);
+        RoundaboutThreadOutboundEvent outboundEvent;
+        outboundEvent.eventType = RoundaboutThreadOutboundEvent::CREATED_SEQUENCER;
+        outboundEvent.sequencer = inboundEvent.sequencer;
+        writeOutboundEvent(outboundEvent);
     }
 }
 
 void RoundaboutThread::processOutboundEvent(RoundaboutThreadOutboundEvent &event)
 {
-    if (event.eventType == RoundaboutThreadOutboundEvent::SHUTDOWN) {
+    if (event.eventType == RoundaboutThreadOutboundEvent::CREATED_SEQUENCER) {
+        outboundEventsInterfaces.append(event.sequencer);
+        createdSequencer(event.sequencer);
+    } else if (event.eventType == RoundaboutThreadOutboundEvent::SHUTDOWN) {
         shutdown = true;
     }
 }
 
-void RoundaboutThread::process(jack_nframes_t nframes)
+bool operator <(const MidiEvent &a, const MidiEvent &b)
 {
-    processInboundEvents();
-    outboundCondition.wakeAll();
+    return a.time < b.time;
 }
 
-void RoundaboutThread::process(jack_nframes_t nframes, void *arg)
+int RoundaboutThread::process(jack_nframes_t nframes)
 {
-    ((RoundaboutThread*)arg)->process(nframes);
+    processInboundEvents();
+    midiEventsOutput.resize(0);
+    for (int i = 0; i < sequencers.size(); i++) {
+        sequencers[i]->process(nframes, midiEventsOutput);
+    }
+    qStableSort(midiEventsOutput);
+    // TODO: write sorted midi events to jack output midi buffer....
+    outboundCondition.wakeAll();
+    return 0;
+}
+
+int RoundaboutThread::process(jack_nframes_t nframes, void *arg)
+{
+    return ((RoundaboutThread*)arg)->process(nframes);
 }

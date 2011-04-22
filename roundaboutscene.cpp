@@ -224,16 +224,16 @@ RoundaboutTestConnectionItem * RoundaboutScene::createConnectionItem()
     return new RoundaboutTestConnectionItem(27, 0, this);
 }
 
-void RoundaboutScene::createCircle()
-{
-    RoundaboutTestItem *item = new RoundaboutTestItem(0, this);
-    item->setPos(nextCirclePosition);
-    nextCirclePosition += QPointF(item->rect().width() + 50, 0);
-}
-
 void RoundaboutScene::createConductor()
 {
     RoundaboutTestConductorItem *item = new RoundaboutTestConductorItem(0, this);
     item->setPos(nextConductorPosition);
     nextConductorPosition += QPointF(0, item->rect().height());
+}
+
+void RoundaboutScene::onCreatedSequencer(RoundaboutSequencer *sequencer)
+{
+    RoundaboutSequencerItem *item = new RoundaboutSequencerItem(sequencer, 0, this);
+    item->setPos(nextCirclePosition);
+    nextCirclePosition += QPointF(item->rect().width() + 50, 0);
 }

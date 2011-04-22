@@ -19,23 +19,28 @@
 
 #include "roundabout.h"
 #include "ui_roundabout.h"
+#include <QGLWidget>
 
-Roundabout::Roundabout(QWidget *parent) :
+Roundabout::Roundabout(RoundaboutThread *thread, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::Roundabout),
-    splashScreen(QPixmap(":/png/images/splash.png"), Qt::WindowStaysOnTopHint)
+    splashScreen(QPixmap(":/png/images/splash.png"), Qt::WindowStaysOnTopHint),
+    roundaboutThread(thread)
 {
     ui->setupUi(this);
+    roundaboutThread->setParent(this);
     QActionGroup *toolGroup = new QActionGroup(this);
     toolGroup->addAction(ui->actionTool1);
     toolGroup->addAction(ui->actionTool2);
     toolGroup->addAction(ui->actionTool3);
     ui->graphicsView->setRenderHint(QPainter::Antialiasing);
+    ui->graphicsView->setViewport(new QGLWidget());
     // display our RoundaboutScene in the graphics view:
     ui->graphicsView->setScene(&roundaboutScene);
     QObject::connect(&splashTimer, SIGNAL(timeout()), &splashScreen, SLOT(close()));
     splashScreen.show();
     splashTimer.start(2000);
+    QObject::connect(roundaboutThread, SIGNAL(createdSequencer(RoundaboutSequencer*)), &roundaboutScene, SLOT(onCreatedSequencer(RoundaboutSequencer*)));
 }
 
 Roundabout::~Roundabout()
@@ -45,7 +50,7 @@ Roundabout::~Roundabout()
 
 void Roundabout::on_actionCreate_roundabout_triggered()
 {
-    roundaboutScene.createCircle();
+    roundaboutThread->createSequencer();
 }
 
 void Roundabout::on_actionCreate_conductor_triggered()

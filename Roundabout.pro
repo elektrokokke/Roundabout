@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui opengl
 
 win32:RC_FILE = roundabout.rc
 macx:ICON = roundabout.icns

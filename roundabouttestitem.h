@@ -189,11 +189,20 @@ private:
     qreal angle;
 };
 
-class RoundaboutTestItem : public QGraphicsEllipseItem, public RoundaboutTestConnectableHost
+class RoundaboutSequencer;
+
+class RoundaboutSequencerItem : public QObject, public QGraphicsEllipseItem, public RoundaboutTestConnectableHost
 {
+    Q_OBJECT
 public:
-    RoundaboutTestItem(QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);
+    RoundaboutSequencerItem(RoundaboutSequencer *sequencer, QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);
     virtual RoundaboutTestConnectable * getConnectableAt(QPointF scenePos);
+signals:
+    void toggleStep(int step);
+    void toggleNote(int step, int noteNumber);
+public slots:
+    void onEnteredStep(int step);
+    void onLeftStep(int step);
 protected:
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
@@ -202,9 +211,6 @@ private:
     qreal sliceAngle;
     RoundaboutTestArrowItem *arrowItem;
     QVector<RoundaboutTestSliceItem*> sliceItems;
-
-    void enterStep(int step);
-    void leaveStep(int step);
 };
 
 #endif // ROUNDABOUTTESTITEM_H

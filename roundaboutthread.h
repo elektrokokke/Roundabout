@@ -25,7 +25,15 @@
 #include <QWaitCondition>
 #include <QVector>
 #include <jack/jack.h>
+#include <jack/types.h>
+#include <jack/midiport.h>
 #include "ringbuffer.h"
+
+struct MidiEvent {
+    jack_nframes_t time;
+    size_t size;
+    jack_midi_data_t buffer[3];
+};
 
 class InboundEventsInterface
 {
@@ -101,8 +109,10 @@ struct RoundaboutThreadInboundEvent {
 };
 struct RoundaboutThreadOutboundEvent {
     enum EventType {
+        CREATED_SEQUENCER,
         SHUTDOWN
     } eventType;
+    RoundaboutSequencer *sequencer;
 };
 
 class RoundaboutThread : public QThread, public InboundEventsHelper<RoundaboutThreadInboundEvent>, public OutboundEventsHelper<RoundaboutThreadOutboundEvent>
@@ -115,6 +125,7 @@ public:
     virtual void processInboundEvents();
     virtual void processOutboundEvents();
 signals:
+    void createdSequencer(RoundaboutSequencer *sequencer);
 public slots:
     void createSequencer();
 protected:
@@ -131,10 +142,12 @@ private:
     jack_client_t *client;
     QVector<OutboundEventsInterface*> outboundEventsInterfaces;
     QVector<InboundEventsInterface*> inboundEventsInterfaces;
+    QVector<RoundaboutSequencer*> sequencers;
+    QVector<MidiEvent> midiEventsOutput;
 
     // Will be called in the jack process thread:
-    void process(jack_nframes_t nframes);
-    static void process(jack_nframes_t nframes, void *arg);
+    int process(jack_nframes_t nframes);
+    static int process(jack_nframes_t nframes, void *arg);
 };
 
 #endif // ROUNDABOUTTHREAD_H

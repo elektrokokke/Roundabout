@@ -18,15 +18,19 @@
  */
 
 #include <QtGui/QApplication>
+#include <QMessageBox>
 #include "roundabout.h"
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    Roundabout w;
+    RoundaboutThread *thread = new RoundaboutThread();
+    if (!thread->isValid()) {
+        QMessageBox::critical(0, "Jack not running?", "Could not connect to the Jack server. Please make sure that the Jack server is running.");
+        return -1;
+    }
+    Roundabout w(thread);
     w.show();
-
-
     return a.exec();
 }

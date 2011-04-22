@@ -18,6 +18,7 @@
  */
 
 #include "roundabouttestitem.h"
+#include "roundaboutsequencer.h"
 #include <QPen>
 #include <QBrush>
 #include <QFont>
@@ -667,7 +668,7 @@ void RoundaboutTestConductorItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event
     }
 }
 
-RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent, QGraphicsScene *scene) :
+RoundaboutSequencerItem::RoundaboutSequencerItem(RoundaboutSequencer *sequencer, QGraphicsItem *parent, QGraphicsScene *scene) :
     QGraphicsEllipseItem(-200, -200, 400, 400, parent, scene),
     steps(16),
     sliceAngle(360.0 / steps)
@@ -687,9 +688,13 @@ RoundaboutTestItem::RoundaboutTestItem(QGraphicsItem *parent, QGraphicsScene *sc
         sliceItem->getKeyboardItem()->setOpacity(0);
         sliceItems.append(sliceItem);
     }
+    QObject::connect(sequencer, SIGNAL(enteredStep(int)), this, SLOT(onEnteredStep(int)));
+    QObject::connect(sequencer, SIGNAL(leftStep(int)), this, SLOT(onLeftStep(int)));
+    QObject::connect(this, SIGNAL(toggleNote(int,int)), sequencer, SLOT(toggleNote(int,int)));
+    QObject::connect(this, SIGNAL(toggleStep(int)), sequencer, SLOT(toggleStep(int)));
 }
 
-RoundaboutTestConnectable * RoundaboutTestItem::getConnectableAt(QPointF scenePos)
+RoundaboutTestConnectable * RoundaboutSequencerItem::getConnectableAt(QPointF scenePos)
 {
     qreal angle = -QLineF(QPointF(0, 0), mapFromScene(scenePos)).angle() + 90 + 0.5 * sliceAngle;
     for (; angle < 0; angle += 360);
@@ -697,27 +702,27 @@ RoundaboutTestConnectable * RoundaboutTestItem::getConnectableAt(QPointF scenePo
     return sliceItems[step]->getSegmentItem();
 }
 
-void RoundaboutTestItem::hoverEnterEvent(QGraphicsSceneHoverEvent * event)
+void RoundaboutSequencerItem::onEnteredStep(int step)
+{
+    sliceItems[step]->setHighlight(true);
+}
+
+void RoundaboutSequencerItem::onLeftStep(int step)
+{
+    sliceItems[step]->setHighlight(false);
+}
+
+void RoundaboutSequencerItem::hoverEnterEvent(QGraphicsSceneHoverEvent * event)
 {
     for (int i = 0; i < sliceItems.size(); i++) {
         sliceItems[i]->getKeyboardItem()->setOpacity(1);
     }
 }
 
-void RoundaboutTestItem::hoverLeaveEvent(QGraphicsSceneHoverEvent * event)
+void RoundaboutSequencerItem::hoverLeaveEvent(QGraphicsSceneHoverEvent * event)
 {
     for (int i = 0; i < sliceItems.size(); i++) {
         sliceItems[i]->getKeyboardItem()->setOpacity(0);
     }
-}
-
-void RoundaboutTestItem::enterStep(int step)
-{
-    sliceItems[step]->setHighlight(true);
-}
-
-void RoundaboutTestItem::leaveStep(int step)
-{
-    sliceItems[step]->setHighlight(false);
 }
 

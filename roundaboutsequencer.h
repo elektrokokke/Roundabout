@@ -25,6 +25,7 @@ class RoundaboutSequencer : public QObject, public InboundEventsHelper<Roundabou
 public:
     RoundaboutSequencer(QObject *parent = 0);
 
+    virtual void process(jack_nframes_t nframes, QVector<MidiEvent> &midiEventsOutput);
 protected:
     // Reimplemented from InboundEventsHelper:
     virtual void processInboundEvent(RoundaboutSequencerInboundEvent &event);
@@ -36,6 +37,9 @@ signals:
 public slots:
     void toggleStep(int step);
     void toggleNote(int step, int noteNumber);
+private:
+    int steps, stepsPerBeat, currentStep;
+    double beatsPerMinute, sampleRate, framesPerStep, nextStepFrame;
 };
 
 #endif // ROUNDABOUTSEQUENCER_H
