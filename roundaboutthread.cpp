@@ -23,11 +23,11 @@
 RoundaboutThread::RoundaboutThread(QObject *parent) :
     QThread(parent),
     shutdown(false),
-    client(0)
+    client(0),
+    sequencer(0)
 {
     midiEventsOutput.reserve(4096);
     inboundEventsInterfaces.reserve(1024);
-    sequencers.reserve(1024);
     // connect to the jack server:
     client = jack_client_open("Roundabout", JackNullOption, 0);
     if (client) {
@@ -110,7 +110,9 @@ void RoundaboutThread::processInboundEvent(RoundaboutThreadInboundEvent &inbound
 {
     if (inboundEvent.eventType == RoundaboutThreadInboundEvent::CREATE_SEQUENCER) {
         inboundEventsInterfaces.append(inboundEvent.sequencer);
-        sequencers.append(inboundEvent.sequencer);
+        if (sequencer == 0) {
+            sequencer = inboundEvent.sequencer;
+        }
         RoundaboutThreadOutboundEvent outboundEvent;
         outboundEvent.eventType = RoundaboutThreadOutboundEvent::CREATED_SEQUENCER;
         outboundEvent.sequencer = inboundEvent.sequencer;
@@ -137,8 +139,8 @@ int RoundaboutThread::process(jack_nframes_t nframes)
 {
     processInboundEvents();
     midiEventsOutput.resize(0);
-    for (int i = 0; i < sequencers.size(); i++) {
-        sequencers[i]->process(nframes, midiEventsOutput);
+    if (sequencer) {
+        sequencer = sequencer->move(nframes, 0, midiEventsOutput);
     }
     qStableSort(midiEventsOutput);
     // TODO: write sorted midi events to jack output midi buffer....

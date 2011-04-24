@@ -31,7 +31,7 @@ struct RoundaboutSequencerInboundEvent {
         TOGGLE_NOTE,
         CONNECT_STEP,
     } eventType;
-    int step, noteNumber;
+    int step, noteNumber, connectedStep;
     RoundaboutSequencer *sequencer;
 };
 struct RoundaboutSequencerOutboundEvent {
@@ -49,10 +49,12 @@ public:
     struct Step {
         bool active;
         RoundaboutSequencer *connection;
+        int connectedStep;
     };
     RoundaboutSequencer(QObject *parent = 0);
 
-    virtual void process(jack_nframes_t nframes, QVector<MidiEvent> &midiEventsOutput);
+    void setNextStep(int step);
+    virtual RoundaboutSequencer * move(jack_nframes_t nframes, jack_nframes_t time, QVector<MidiEvent> &midiEventsOutput);
 protected:
     // Reimplemented from InboundEventsHelper:
     virtual void processInboundEvent(RoundaboutSequencerInboundEvent &event);
@@ -64,11 +66,12 @@ signals:
 public slots:
     void toggleStep(int step);
     void toggleNote(int step, int noteNumber);
-    void connect(int step, RoundaboutSequencer *sequencer);
+    void connect(int step, RoundaboutSequencer *sequencer, int connectedStep);
     void disconnect(int step);
 private:
-    int stepsPerBeat, currentStep;
-    double beatsPerMinute, sampleRate, framesPerStep, nextStepFrame;
+    int stepsPerBeat, currentStep, nextStep;
+    double beatsPerMinute, sampleRate;
+    jack_nframes_t framesPerStep, framesTillNextStep;
     QVector<Step> steps;
 };
 

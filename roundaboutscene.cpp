@@ -19,6 +19,7 @@
 
 #include "roundaboutscene.h"
 #include "roundabouttestitem.h"
+#include "roundaboutsequencer.h"
 #include <QGraphicsSceneMouseEvent>
 
 RoundaboutTestConnectable::RoundaboutTestConnectable(bool canConnectP1_, bool canConnectP2_) :
@@ -86,15 +87,34 @@ void RoundaboutTestConnectionItem::setConnectable(RoundaboutTestConnectionPoint 
     if (point == P1) {
         if (connectable1 && (connectable1 != connectable)) {
             connectable1->removeConnection();
+            disconnected(connectable1);
         }
         connectable1 = connectable;
+        if (connectable2) {
+            connected(connectable1, connectable2);
+        }
     } else {
         if (connectable2 && (connectable2 != connectable)) {
             connectable2->removeConnection();
+            if (connectable1) {
+                disconnected(connectable1);
+            }
         }
         connectable2 = connectable;
+        if (connectable1) {
+            connected(connectable1, connectable2);
+        }
     }
     movedConnectable(point);
+}
+
+RoundaboutTestConnectable * RoundaboutTestConnectionItem::getConnectable(RoundaboutTestConnectionPoint point)
+{
+    if (point == P1) {
+        return connectable1;
+    } else {
+        return connectable2;
+    }
 }
 
 void RoundaboutTestConnectionItem::movedConnectable(RoundaboutTestConnectionPoint  point)
@@ -176,9 +196,13 @@ void RoundaboutTestConnectionItem::mouseMoveEvent(QGraphicsSceneMouseEvent * eve
     }
     if ((movingPoint == P1) && connectable1) {
         connectable1->removeConnection();
+        disconnected(connectable1);
         connectable1 = 0;
     } else if ((movingPoint == P2) && connectable2) {
         connectable2->removeConnection();
+        if (connectable1) {
+            disconnected(connectable1);
+        }
         connectable2 = 0;
     }
     setPoint(movingPoint, event->pos());
@@ -190,6 +214,7 @@ void RoundaboutTestConnectionItem::mouseReleaseEvent(QGraphicsSceneMouseEvent * 
     if ((connectable1 == 0) || (connectable2 == 0)) {
         if (connectable1) {
             connectable1->removeConnection();
+            disconnected(connectable1);
         } else if (connectable2) {
             connectable2->removeConnection();
         }
@@ -225,7 +250,10 @@ RoundaboutScene::RoundaboutScene(QObject *parent) :
 
 RoundaboutTestConnectionItem * RoundaboutScene::createConnectionItem()
 {
-    return new RoundaboutTestConnectionItem(27, 0, this);
+    RoundaboutTestConnectionItem *item = new RoundaboutTestConnectionItem(27, 0, this);
+    QObject::connect(item, SIGNAL(connected(RoundaboutTestConnectable*,RoundaboutTestConnectable*)), this, SLOT(onConnected(RoundaboutTestConnectable*,RoundaboutTestConnectable*)));
+    QObject::connect(item, SIGNAL(disconnected(RoundaboutTestConnectable*)), this, SLOT(onDisconnected(RoundaboutTestConnectable*)));
+    return item;
 }
 
 void RoundaboutScene::createConductor()
@@ -240,4 +268,20 @@ void RoundaboutScene::onCreatedSequencer(RoundaboutSequencer *sequencer)
     RoundaboutSequencerItem *item = new RoundaboutSequencerItem(sequencer, 0, this);
     item->setPos(nextCirclePosition);
     nextCirclePosition += QPointF(item->rect().width() + 50, 0);
+}
+
+void RoundaboutScene::onConnected(RoundaboutTestConnectable *p1, RoundaboutTestConnectable *p2)
+{
+    RoundaboutTestSegmentItem *segmentItem1 = dynamic_cast<RoundaboutTestSegmentItem*>(p1);
+    RoundaboutTestSegmentItem *segmentItem2 = dynamic_cast<RoundaboutTestSegmentItem*>(p2);
+    if (segmentItem1 && segmentItem2) {
+        segmentItem1->getSequencerItem()->getSequencer()->connect(segmentItem1->getStep(), segmentItem2->getSequencerItem()->getSequencer(), segmentItem2->getStep());
+    }
+}
+
+void RoundaboutScene::onDisconnected(RoundaboutTestConnectable *p1)
+{
+    if (RoundaboutTestSegmentItem *segmentItem = dynamic_cast<RoundaboutTestSegmentItem*>(p1)) {
+        segmentItem->getSequencerItem()->getSequencer()->disconnect(segmentItem->getStep());
+    }
 }

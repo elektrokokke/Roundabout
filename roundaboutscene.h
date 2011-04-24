@@ -56,13 +56,18 @@ public:
     virtual RoundaboutTestConnectable * getConnectableAt(QPointF scenePos) = 0;
 };
 
-class RoundaboutTestConnectionItem : public QGraphicsPathItem
+class RoundaboutTestConnectionItem : public QObject, public QGraphicsPathItem
 {
+    Q_OBJECT
 public:
     RoundaboutTestConnectionItem(qreal width, QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);
     void setConnectable(RoundaboutTestConnectionPoint point, RoundaboutTestConnectable *connectable);
+    RoundaboutTestConnectable * getConnectable(RoundaboutTestConnectionPoint point);
     void movedConnectable(RoundaboutTestConnectionPoint point);
     void startMove(RoundaboutTestConnectionPoint point);
+signals:
+    void connected(RoundaboutTestConnectable *p1, RoundaboutTestConnectable *p2);
+    void disconnected(RoundaboutTestConnectable *p1);
 protected:
     void setPoint(RoundaboutTestConnectionPoint point, QPointF pos, qreal angle);
     void setPoint(RoundaboutTestConnectionPoint point, QPointF pos);
@@ -88,6 +93,8 @@ public:
 signals:
 public slots:
     void onCreatedSequencer(RoundaboutSequencer *sequencer);
+    void onConnected(RoundaboutTestConnectable *p1, RoundaboutTestConnectable *p2);
+    void onDisconnected(RoundaboutTestConnectable *p1);
 private:
     QPointF nextCirclePosition, nextConductorPosition;
 };

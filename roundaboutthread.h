@@ -142,7 +142,7 @@ private:
     jack_client_t *client;
     QVector<OutboundEventsInterface*> outboundEventsInterfaces;
     QVector<InboundEventsInterface*> inboundEventsInterfaces;
-    QVector<RoundaboutSequencer*> sequencers;
+    RoundaboutSequencer *sequencer;
     QVector<MidiEvent> midiEventsOutput;
 
     // Will be called in the jack process thread:

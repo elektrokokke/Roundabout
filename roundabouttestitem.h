@@ -85,6 +85,8 @@ private:
     bool hover;
 };
 
+class RoundaboutSequencerItem;
+
 class RoundaboutTestSegmentItem : public QGraphicsPathItem, public RoundaboutTestConnectable
 {
 public:
@@ -93,7 +95,9 @@ public:
         BENT_AT_BEGIN,
         BENT_AT_END
     };
-    RoundaboutTestSegmentItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, QGraphicsItem *parent = 0);
+    RoundaboutTestSegmentItem(RoundaboutSequencerItem *sequencerItem, int step, QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, QGraphicsItem *parent = 0);
+    int getStep() const;
+    RoundaboutSequencerItem *getSequencerItem();
     void setHighlight(bool highlight);
     bool getState() const;
     void setShape(Shape shape);
@@ -107,6 +111,8 @@ protected:
     virtual void mouseMoveEvent(QGraphicsSceneMouseEvent * event);
     virtual QVariant itemChange(GraphicsItemChange change, const QVariant & value);
 private:
+    int step;
+    RoundaboutSequencerItem *sequencerItem;
     Shape myShape;
     QColor normalColor, highlightedColor, stateColor;
     bool state, hover, highlight;
@@ -161,7 +167,7 @@ private:
 class RoundaboutTestSliceItem : public QGraphicsPathItem
 {
 public:
-    RoundaboutTestSliceItem(QRectF innerRect, QRectF outerRect, RoundaboutTestKeyboardItem::Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent = 0);
+    RoundaboutTestSliceItem(RoundaboutSequencerItem *sequencerItem, int step, QRectF innerRect, QRectF outerRect, RoundaboutTestKeyboardItem::Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent = 0);
     void setHighlight(bool highlight);
     RoundaboutTestKeyboardItem *getKeyboardItem();
     RoundaboutTestSegmentItem *getSegmentItem();
@@ -196,6 +202,7 @@ class RoundaboutSequencerItem : public QObject, public QGraphicsEllipseItem, pub
     Q_OBJECT
 public:
     RoundaboutSequencerItem(RoundaboutSequencer *sequencer, QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);
+    RoundaboutSequencer * getSequencer();
     virtual RoundaboutTestConnectable * getConnectableAt(QPointF scenePos);
 signals:
     void toggleStep(int step);
@@ -211,6 +218,7 @@ private:
     qreal sliceAngle;
     RoundaboutTestArrowItem *arrowItem;
     QVector<RoundaboutTestSliceItem*> sliceItems;
+    RoundaboutSequencer *sequencer;
 };
 
 #endif // ROUNDABOUTTESTITEM_H
