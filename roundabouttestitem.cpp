@@ -457,8 +457,10 @@ RoundaboutTestArrowItem::RoundaboutTestArrowItem(QRectF rect, qreal tipOffset, Q
     setPath(path);
 }
 
-RoundaboutTestKeyItem::RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, KeyType keyType, QGraphicsItem *parent) :
+RoundaboutTestKeyItem::RoundaboutTestKeyItem(int step_, int note_, QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, KeyType keyType, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
+    step(step_),
+    note(note_),
     normalColor(keyType == WHITE ? "lightsteelblue" : "steelblue"),
     highlightedColor(Qt::white),
     stateColor(keyType == WHITE ? "steelblue" : "black"),
@@ -517,11 +519,12 @@ void RoundaboutTestKeyItem::mousePressEvent(QGraphicsSceneMouseEvent * event)
 {
     event->accept();
     state = !state;
+    toggledNote(step, note);
     setFlag(QGraphicsItem::ItemIgnoresParentOpacity, state);
     setHighlight(highlight);
 }
 
-RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(QRectF innerMostRect, QRectF outerMostRect, Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent) :
+RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(int step, QRectF innerMostRect, QRectF outerMostRect, Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent) :
     QGraphicsPathItem(parent)
 {
     setPen(QPen(Qt::NoPen));
@@ -532,6 +535,7 @@ RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(QRectF innerMostRect, QRe
         QRectF outerRect = (qreal)(octaves - i - 1) / (qreal)octaves * innerMostRect + (1.0 - (qreal)(octaves - i - 1) / (qreal)octaves) * outerMostRect;
 
         // white keys:
+        int notes[8] = { 0, 2, 4, 5, 7, 9, 11, 12 };
         int keys = 8;
         qreal keyWidth = 1.0 / (qreal)keys;
         for (int i = 0; i < keys; i++) {
@@ -543,10 +547,11 @@ RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(QRectF innerMostRect, QRe
             }
             QRectF outerKeyRect = (1.0 - from) * innerRect + from * outerRect;
             QRectF innerKeyRect = (1.0 - to) * innerRect + to * outerRect;
-            RoundaboutTestKeyItem *keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle, arcLength, RoundaboutTestKeyItem::WHITE, this);
+            RoundaboutTestKeyItem *keyItem = new RoundaboutTestKeyItem(step, notes[i], innerKeyRect, outerKeyRect, startAngle, arcLength, RoundaboutTestKeyItem::WHITE, this);
             keyItems.append(keyItem);
         }
         // black keys:
+        int blackNotes[5] = { 1, 3, 6, 8, 10 };
         qreal blackKeyArcLength = 0.6 * arcLength;
         qreal blackKeyWidth = 0.75 * keyWidth;
         QVector<qreal> blackKeys;
@@ -566,9 +571,9 @@ RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(QRectF innerMostRect, QRe
             QRectF innerKeyRect = (1.0 - to) * innerRect + to * outerRect;
             RoundaboutTestKeyItem *keyItem;
             if (dir == INNER_TO_OUTER) {
-                keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle, blackKeyArcLength, RoundaboutTestKeyItem::BLACK, this);
+                keyItem = new RoundaboutTestKeyItem(step, blackNotes[i], innerKeyRect, outerKeyRect, startAngle, blackKeyArcLength, RoundaboutTestKeyItem::BLACK, this);
             } else {
-                keyItem = new RoundaboutTestKeyItem(innerKeyRect, outerKeyRect, startAngle + arcLength - blackKeyArcLength, blackKeyArcLength, RoundaboutTestKeyItem::BLACK, this);
+                keyItem = new RoundaboutTestKeyItem(step, blackNotes[i], innerKeyRect, outerKeyRect, startAngle + arcLength - blackKeyArcLength, blackKeyArcLength, RoundaboutTestKeyItem::BLACK, this);
             }
             for (int j = 0; j < keyItems.size(); j++) {
                 keyItems[j]->setPath(keyItems[j]->path() - keyItem->path());
@@ -592,6 +597,16 @@ void RoundaboutTestKeyboardItem::setLowkey(bool lowkey)
     }
 }
 
+int RoundaboutTestKeyboardItem::getNrOfKeys() const
+{
+    return keyItems.size();
+}
+
+RoundaboutTestKeyItem * RoundaboutTestKeyboardItem::getKeyItem(int index)
+{
+    return keyItems[index];
+}
+
 RoundaboutTestSliceItem::RoundaboutTestSliceItem(RoundaboutSequencerItem *sequencerItem, int step, QRectF innerRect, QRectF outerRect, RoundaboutTestKeyboardItem::Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
     normalColor(mixColors(QColor("lightsteelblue"), QColor(Qt::white), 1, 1))
@@ -603,7 +618,7 @@ RoundaboutTestSliceItem::RoundaboutTestSliceItem(RoundaboutSequencerItem *sequen
     setBrush(QBrush(normalColor));
     setAcceptHoverEvents(true);
     setPath(createSegmentPath(innerRect, outerRect, startAngle, arcLength));
-    keyboardItem = new RoundaboutTestKeyboardItem(innerRect, 0.85 * outerRect, dir, startAngle, arcLength, this);
+    keyboardItem = new RoundaboutTestKeyboardItem(step, innerRect, 0.85 * outerRect, dir, startAngle, arcLength, this);
     keyboardItem->setLowkey(true);
     segmentItem = new RoundaboutTestSegmentItem(sequencerItem, step, 0.85 * outerRect, outerRect, startAngle, arcLength, this);
 }
@@ -700,6 +715,9 @@ RoundaboutSequencerItem::RoundaboutSequencerItem(RoundaboutSequencer *sequencer_
         RoundaboutTestSliceItem *sliceItem = new RoundaboutTestSliceItem(this, i, 0.25 * innerRect, innerRect, i < steps / 2 ? RoundaboutTestKeyboardItem::INNER_TO_OUTER : RoundaboutTestKeyboardItem::OUTER_TO_INNER, sliceAngle * i - 90 - 0.5 * sliceAngle, sliceAngle, this);
         sliceItem->getKeyboardItem()->setOpacity(0);
         sliceItems.append(sliceItem);
+        for (int j = 0; j < sliceItem->getKeyboardItem()->getNrOfKeys(); j++) {
+            QObject::connect(sliceItem->getKeyboardItem()->getKeyItem(j), SIGNAL(toggledNote(int,int)), sequencer, SLOT(toggleNote(int,int)));
+        }
     }
     QObject::connect(sequencer, SIGNAL(enteredStep(int)), this, SLOT(onEnteredStep(int)));
     QObject::connect(sequencer, SIGNAL(leftStep(int)), this, SLOT(onLeftStep(int)));

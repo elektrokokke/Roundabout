@@ -47,10 +47,13 @@ void RoundaboutSequencer::setNextStep(int step)
     framesTillNextStep = 0;
 }
 
-RoundaboutSequencer * RoundaboutSequencer::move(jack_nframes_t nframes, jack_nframes_t time, QVector<MidiEvent> &midiEventsOutput)
+RoundaboutSequencer * RoundaboutSequencer::move(jack_nframes_t nframes, jack_nframes_t time, const QVector<MidiEvent> &midiEventsInput, QVector<MidiEvent> &midiEventsOutput)
 {
+    jack_nframes_t timeFrom = time;
     for (; framesTillNextStep < (int)nframes; ) {
         time += framesTillNextStep;
+        // TODO: process all input midi events between timeFrom and time
+        timeFrom = time;
         nframes -= framesTillNextStep;
         RoundaboutSequencerOutboundEvent event;
         if (currentStep >= 0) {
@@ -67,7 +70,7 @@ RoundaboutSequencer * RoundaboutSequencer::move(jack_nframes_t nframes, jack_nfr
                 Step &step = steps[currentStep];
                 currentStep = -1;
                 step.connection->setNextStep(step.connectedStep);
-                return step.connection->move(nframes, time, midiEventsOutput);
+                return step.connection->move(nframes, time, midiEventsInput, midiEventsOutput);
             }
         }
         currentStep = nextStep;
@@ -85,6 +88,8 @@ RoundaboutSequencer * RoundaboutSequencer::move(jack_nframes_t nframes, jack_nfr
         }
         framesTillNextStep += framesPerStep;
     }
+    time += nframes;
+    // TODO: process all input midi events between timeFrom and time
     framesTillNextStep -= nframes;
     return this;
 }

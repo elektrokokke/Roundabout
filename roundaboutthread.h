@@ -173,7 +173,7 @@ private:
     QVector<OutboundEventsInterface*> outboundEventsInterfaces;
     QVector<InboundEventsInterface*> inboundEventsInterfaces;
     RoundaboutSequencer *sequencer;
-    QVector<MidiEvent> midiEventsOutput;
+    QVector<MidiEvent> midiEventsInput, midiEventsOutput;
 
     // Will be called in the jack process thread:
     int process(jack_nframes_t nframes);

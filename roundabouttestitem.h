@@ -130,22 +130,26 @@ private:
     QColor normalColor;
 };
 
-class RoundaboutTestKeyItem : public QGraphicsPathItem
+class RoundaboutTestKeyItem : public QObject, public QGraphicsPathItem
 {
+    Q_OBJECT
 public:
     enum KeyType {
         BLACK,
         WHITE
     };
 
-    RoundaboutTestKeyItem(QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, KeyType keyType, QGraphicsItem *parent = 0);
+    RoundaboutTestKeyItem(int step, int note, QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, KeyType keyType, QGraphicsItem *parent = 0);
     void setHighlight(bool highlight);
     void setLowkey(bool lowkey);
+signals:
+    void toggledNote(int step, int note);
 protected:
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
 private:
+    int step, note;
     QColor normalColor, highlightedColor, stateColor, lowkeyColor;
     bool state, hover, highlight, lowkey;
 };
@@ -157,9 +161,11 @@ public:
         INNER_TO_OUTER,
         OUTER_TO_INNER
     };
-    RoundaboutTestKeyboardItem(QRectF innerRect, QRectF outerRect, Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent = 0);
+    RoundaboutTestKeyboardItem(int step, QRectF innerRect, QRectF outerRect, Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent = 0);
     void setHighlight(bool highlight);
     void setLowkey(bool lowkey);
+    int getNrOfKeys() const;
+    RoundaboutTestKeyItem * getKeyItem(int index);
 private:
     QVector<RoundaboutTestKeyItem*> keyItems;
 };
