@@ -21,7 +21,8 @@
 
 RoundaboutSequencer::RoundaboutSequencer(QObject *parent) :
     QObject(parent),
-    channel(0),
+    inputChannel(0),
+    outputChannel(0),
     baseNoteNumber(48),
     activeBaseNoteNumber(48),
     activeNotes(13),
@@ -52,7 +53,8 @@ RoundaboutSequencer * RoundaboutSequencer::move(jack_nframes_t nframes, jack_nfr
     jack_nframes_t timeFrom = time;
     for (; framesTillNextStep < (int)nframes; ) {
         time += framesTillNextStep;
-        // TODO: process all input midi events between timeFrom and time
+        // process all input midi events between timeFrom and time:
+        processMidiEvents(timeFrom, time, midiEventsInput);
         timeFrom = time;
         nframes -= framesTillNextStep;
         RoundaboutSequencerOutboundEvent event;
@@ -63,7 +65,7 @@ RoundaboutSequencer * RoundaboutSequencer::move(jack_nframes_t nframes, jack_nfr
             // create midi note off event:
             for (int note = 0; note < activeNotes.size(); note++) {
                 if (activeNotes[note]) {
-                    midiEventsOutput.append(MidiNoteOffEvent(time, channel, activeBaseNoteNumber + note, 127));
+                    midiEventsOutput.append(MidiNoteOffEvent(time, outputChannel, qBound(0, activeBaseNoteNumber + note, 127), 127));
                 }
             }
             if (steps[currentStep].connection) {
@@ -83,15 +85,29 @@ RoundaboutSequencer * RoundaboutSequencer::move(jack_nframes_t nframes, jack_nfr
         activeBaseNoteNumber = baseNoteNumber;
         for (int note = 0; note < activeNotes.size(); note++) {
             if (activeNotes[note]) {
-                midiEventsOutput.append(MidiNoteOnEvent(time, channel, activeBaseNoteNumber + note, 127));
+                midiEventsOutput.append(MidiNoteOnEvent(time, outputChannel, qBound(0, activeBaseNoteNumber + note, 127), 127));
             }
         }
         framesTillNextStep += framesPerStep;
     }
     time += nframes;
-    // TODO: process all input midi events between timeFrom and time
+    // process all input midi events between timeFrom and time:
+    processMidiEvents(timeFrom, time, midiEventsInput);
     framesTillNextStep -= nframes;
     return this;
+}
+
+void RoundaboutSequencer::processMidiEvents(jack_nframes_t start, jack_nframes_t end, const QVector<MidiEvent> &midiEventsInput)
+{
+    for (int i = 0; (i < midiEventsInput.size()) && (midiEventsInput[i].time < end); i++) {
+        if (midiEventsInput[i].time >= start) {
+            // interpret midi note on events to set the base note number:
+            const MidiEvent &event = midiEventsInput[i];
+            if (((event.buffer[0] & 0x0F) == inputChannel) && ((event.buffer[0] & 0xF0) == 0x90)) {
+                baseNoteNumber = event.buffer[1];
+            }
+        }
+    }
 }
 
 void RoundaboutSequencer::toggleStep(int step)
