@@ -21,6 +21,10 @@
 
 RoundaboutSequencer::RoundaboutSequencer(QObject *parent) :
     QObject(parent),
+    channel(0),
+    baseNoteNumber(48),
+    activeBaseNoteNumber(48),
+    activeNotes(13),
     stepsPerBeat(4),
     currentStep(-1),
     nextStep(0),
@@ -32,6 +36,7 @@ RoundaboutSequencer::RoundaboutSequencer(QObject *parent) :
 {
     for (int i = 0; i < steps.size(); i++) {
         steps[i].active = true;
+        steps[i].activeNotes = activeNotes;
         steps[i].connection = 0;
     }
 }
@@ -52,7 +57,12 @@ RoundaboutSequencer * RoundaboutSequencer::move(jack_nframes_t nframes, jack_nfr
             event.eventType = RoundaboutSequencerOutboundEvent::LEFT_STEP;
             event.step = currentStep;
             writeOutboundEvent(event);
-            // TODO: create midi note off event
+            // create midi note off event:
+            for (int note = 0; note < activeNotes.size(); note++) {
+                if (activeNotes[note]) {
+                    midiEventsOutput.append(MidiNoteOffEvent(time, channel, activeBaseNoteNumber + note, 127));
+                }
+            }
             if (steps[currentStep].connection) {
                 Step &step = steps[currentStep];
                 currentStep = -1;
@@ -65,7 +75,14 @@ RoundaboutSequencer * RoundaboutSequencer::move(jack_nframes_t nframes, jack_nfr
         event.eventType = RoundaboutSequencerOutboundEvent::ENTERED_STEP;
         event.step = currentStep;
         writeOutboundEvent(event);
-        // TODO: create midi note on event
+        // create midi note on event:
+        activeNotes = steps[currentStep].activeNotes;
+        activeBaseNoteNumber = baseNoteNumber;
+        for (int note = 0; note < activeNotes.size(); note++) {
+            if (activeNotes[note]) {
+                midiEventsOutput.append(MidiNoteOnEvent(time, channel, activeBaseNoteNumber + note, 127));
+            }
+        }
         framesTillNextStep += framesPerStep;
     }
     framesTillNextStep -= nframes;
@@ -81,13 +98,13 @@ void RoundaboutSequencer::toggleStep(int step)
     writeInboundEvent(event);
 }
 
-void RoundaboutSequencer::toggleNote(int step, int noteNumber)
+void RoundaboutSequencer::toggleNote(int step, int note)
 {
     Q_ASSERT((step >= 0) && (step < steps.size()));
     RoundaboutSequencerInboundEvent event;
     event.eventType = RoundaboutSequencerInboundEvent::TOGGLE_NOTE;
     event.step = step;
-    event.noteNumber = noteNumber;
+    event.note = note;
     writeInboundEvent(event);
 }
 
@@ -114,6 +131,8 @@ void RoundaboutSequencer::processInboundEvent(RoundaboutSequencerInboundEvent &e
     if (event.eventType == RoundaboutSequencerInboundEvent::TOGGLE_STEP) {
         steps[event.step].active = !steps[event.step].active;
     } else if (event.eventType == RoundaboutSequencerInboundEvent::TOGGLE_NOTE) {
+        Q_ASSERT((event.note >= 0) && (event.note < activeNotes.size()));
+        steps[event.step].activeNotes.toggleBit(event.note);
     } else if (event.eventType == RoundaboutSequencerInboundEvent::CONNECT_STEP) {
         steps[event.step].connection = event.sequencer;
         steps[event.step].connectedStep = event.connectedStep;

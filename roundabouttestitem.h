@@ -206,7 +206,7 @@ public:
     virtual RoundaboutTestConnectable * getConnectableAt(QPointF scenePos);
 signals:
     void toggleStep(int step);
-    void toggleNote(int step, int noteNumber);
+    void toggleNote(int step, int note);
 public slots:
     void onEnteredStep(int step);
     void onLeftStep(int step);

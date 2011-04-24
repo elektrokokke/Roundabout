@@ -21,6 +21,7 @@
  */
 
 #include <QObject>
+#include <QBitArray>
 #include "roundaboutthread.h"
 
 class RoundaboutSequencer;
@@ -31,7 +32,7 @@ struct RoundaboutSequencerInboundEvent {
         TOGGLE_NOTE,
         CONNECT_STEP,
     } eventType;
-    int step, noteNumber, connectedStep;
+    int step, note, connectedStep;
     RoundaboutSequencer *sequencer;
 };
 struct RoundaboutSequencerOutboundEvent {
@@ -48,6 +49,7 @@ class RoundaboutSequencer : public QObject, public InboundEventsHelper<Roundabou
 public:
     struct Step {
         bool active;
+        QBitArray activeNotes;
         RoundaboutSequencer *connection;
         int connectedStep;
     };
@@ -65,10 +67,12 @@ signals:
     void leftStep(int step);
 public slots:
     void toggleStep(int step);
-    void toggleNote(int step, int noteNumber);
+    void toggleNote(int step, int note);
     void connect(int step, RoundaboutSequencer *sequencer, int connectedStep);
     void disconnect(int step);
 private:
+    unsigned char channel, baseNoteNumber, activeBaseNoteNumber;
+    QBitArray activeNotes;
     int stepsPerBeat, currentStep, nextStep;
     double beatsPerMinute, sampleRate;
     jack_nframes_t framesPerStep, framesTillNextStep;

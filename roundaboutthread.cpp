@@ -32,8 +32,14 @@ RoundaboutThread::RoundaboutThread(QObject *parent) :
     client = jack_client_open("Roundabout", JackNullOption, 0);
     if (client) {
         bool success = true;
+        sampleRate = jack_get_sample_rate(client);
         // register process callback:
         success = success && (jack_set_process_callback(client, process, this) == 0);
+        // register ports:
+        midiInputPort = jack_port_register(client, "midi in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
+        midiOutputPort = jack_port_register(client, "midi out", JACK_DEFAULT_MIDI_TYPE, JackPortIsOutput, 0);
+        audioOutputPort = jack_port_register(client, "audio out", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
+        success = success && midiInputPort && midiOutputPort && audioOutputPort;
         // start the jack client:
         success = success && (jack_activate(client) == 0);
         if (!success) {
@@ -137,13 +143,19 @@ bool operator <(const MidiEvent &a, const MidiEvent &b)
 
 int RoundaboutThread::process(jack_nframes_t nframes)
 {
+    // get midi output buffer:
+    void *midiOutputBuffer = jack_port_get_buffer(midiOutputPort, nframes);
     processInboundEvents();
     midiEventsOutput.resize(0);
     if (sequencer) {
         sequencer = sequencer->move(nframes, 0, midiEventsOutput);
     }
     qStableSort(midiEventsOutput);
-    // TODO: write sorted midi events to jack output midi buffer....
+    // write sorted midi events to jack output midi buffer:
+    for (int i = 0; i < midiEventsOutput.size(); i++) {
+        const MidiEvent &event = midiEventsOutput[i];
+        jack_midi_event_write(midiOutputBuffer, event.time, event.buffer, event.size);
+    }
     outboundCondition.wakeAll();
     return 0;
 }
