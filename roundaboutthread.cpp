@@ -144,6 +144,18 @@ bool operator <(const MidiEvent &a, const MidiEvent &b)
 
 int RoundaboutThread::process(jack_nframes_t nframes)
 {
+    // get midi input buffer:
+    void *midiInputBuffer = jack_port_get_buffer(midiInputPort, nframes);
+    // copy input midi events:
+    midiEventsInput.resize(0);
+    jack_nframes_t inputMidiEvents = jack_midi_get_event_count(midiInputBuffer);
+    for (jack_nframes_t i = 0; i < inputMidiEvents; i++) {
+        jack_midi_event_t jackMidiEvent;
+        jack_midi_event_get(&jackMidiEvent, midiInputBuffer, i);
+        MidiEvent midiEvent(jackMidiEvent.time, jackMidiEvent.size);
+        memcpy(midiEvent.buffer, jackMidiEvent.buffer, jackMidiEvent.size * sizeof(jack_midi_data_t));
+        midiEventsInput.append(midiEvent);
+    }
     // get midi output buffer:
     void *midiOutputBuffer = jack_port_get_buffer(midiOutputPort, nframes);
     jack_midi_clear_buffer(midiOutputBuffer);
