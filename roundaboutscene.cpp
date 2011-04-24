@@ -28,6 +28,10 @@ RoundaboutTestConnectable::RoundaboutTestConnectable(bool canConnectP1_, bool ca
 {
 }
 
+RoundaboutTestConnectable::~RoundaboutTestConnectable()
+{
+}
+
 RoundaboutTestConnectionItem * RoundaboutTestConnectable::getConnectionItem()
 {
     return connectionItem;

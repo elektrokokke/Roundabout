@@ -35,6 +35,7 @@ class RoundaboutTestConnectable
 {
 public:
     RoundaboutTestConnectable(bool canConnectP1, bool canConnectP2);
+    virtual ~RoundaboutTestConnectable();
     RoundaboutTestConnectionItem * getConnectionItem();
     RoundaboutTestConnectionPoint getConnectionPoint() const;
     virtual QPointF getConnectionAnchor(RoundaboutTestConnectionPoint point, qreal &angle) const = 0;
