@@ -19,7 +19,6 @@
 
 #include "roundabout.h"
 #include "ui_roundabout.h"
-#include <QGLWidget>
 
 Roundabout::Roundabout(RoundaboutThread *thread, QWidget *parent) :
     QMainWindow(parent),
@@ -34,7 +33,6 @@ Roundabout::Roundabout(RoundaboutThread *thread, QWidget *parent) :
     toolGroup->addAction(ui->actionTool2);
     toolGroup->addAction(ui->actionTool3);
     ui->graphicsView->setRenderHint(QPainter::Antialiasing);
-//    ui->graphicsView->setViewport(new QGLWidget());
     // display our RoundaboutScene in the graphics view:
     ui->graphicsView->setScene(&roundaboutScene);
     QObject::connect(&splashTimer, SIGNAL(timeout()), &splashScreen, SLOT(close()));
