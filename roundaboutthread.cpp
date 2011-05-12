@@ -24,10 +24,12 @@ RoundaboutThread::RoundaboutThread(QObject *parent) :
     QThread(parent),
     shutdown(false),
     client(0),
-    sequencer(0)
+    sequencer(0),
+    activeSequencer(0),
+    stepsPerBeat(4)
 {
-    midiEventsInput.reserve(4096);
-    midiEventsOutput.reserve(4096);
+    midiInput.reserve(4096);
+    midiOutput.reserve(4096);
     inboundEventsInterfaces.reserve(1024);
     // connect to the jack server:
     client = jack_client_open("Roundabout", JackNullOption, 0);
@@ -138,51 +140,84 @@ void RoundaboutThread::processOutboundEvent(RoundaboutThreadOutboundEvent &event
     }
 }
 
-bool operator <(const MidiEvent &a, const MidiEvent &b)
-{
-    return a.time < b.time;
-}
-
 int RoundaboutThread::process(jack_nframes_t nframes)
 {
     // get transport state:
     jack_position_t currentPos;
     jack_transport_state_t currentState = jack_transport_query(client, &currentPos);
+
     // get midi input buffer:
     void *midiInputBuffer = jack_port_get_buffer(midiInputPort, nframes);
     // copy input midi events:
-    midiEventsInput.resize(0);
-    jack_nframes_t inputMidiEvents = jack_midi_get_event_count(midiInputBuffer);
-    for (jack_nframes_t i = 0; i < inputMidiEvents; i++) {
-        jack_midi_event_t jackMidiEvent;
-        jack_midi_event_get(&jackMidiEvent, midiInputBuffer, i);
-        MidiEvent midiEvent(jackMidiEvent.time, jackMidiEvent.size);
-        memcpy(midiEvent.buffer, jackMidiEvent.buffer, jackMidiEvent.size * sizeof(jack_midi_data_t));
-        midiEventsInput.append(midiEvent);
-    }
+    midiInput.resize(0);
+    jack_nframes_t midiInputEventCount = jack_midi_get_event_count(midiInputBuffer);
+    jack_nframes_t midiInputEventIndex = 0;
     // get midi output buffer:
     void *midiOutputBuffer = jack_port_get_buffer(midiOutputPort, nframes);
     jack_midi_clear_buffer(midiOutputBuffer);
     processInboundEvents();
-    midiEventsOutput.resize(0);
-    for (int i = 0; i < sequencers.size(); i++) {
-        sequencers[i]->beforeMove();
-    }
-    if (sequencer && currentState == JackTransportRolling) {
-        sequencer = sequencer->move(nframes, 0, midiEventsInput, midiEventsOutput);
-    } else if (currentState == JackTransportStopped) {
-        for (int i = 0; i < sequencers.size(); i++) {
-            sequencers[i]->stop(midiEventsOutput);
+
+    if (sequencer) {
+        if ((currentPos.valid & JackPositionBBT) && (currentState == JackTransportRolling)) {
+            jack_nframes_t bbt_offset = (currentPos.valid & JackBBTFrameOffset ? currentPos.bbt_offset : 0);
+            double framesPerMinute = 60.0 * currentPos.frame_rate;
+            double ticksPerMinute = (double)currentPos.ticks_per_beat * (double)currentPos.beats_per_minute;
+            double ticksPerFrame = ticksPerMinute / framesPerMinute;
+            // current tick is bbt_offset frames before the first frame
+            double currentTick = (double)bbt_offset * ticksPerFrame + (double)currentPos.tick;
+            // beat position is current tick / ticks per beat:
+            double currentBeat = currentTick / (double)currentPos.ticks_per_beat + (double)(currentPos.beat - 1);
+            double beatPosition = currentBeat - (int)currentBeat;
+            // current step is position in beat * steps per beat:
+            double currentStep = beatPosition * (double)stepsPerBeat;
+            double stepPosition = currentStep - (int)currentStep;
+            double framesPerStep = framesPerMinute / ((double)currentPos.beats_per_minute * (double)stepsPerBeat);
+            jack_nframes_t nextStep = (jack_nframes_t)(framesPerStep - stepPosition * framesPerStep);
+            for (; nextStep < nframes; ) {
+                // get all midi input events up to nextStep:
+                midiInput.resize(0);
+                for (; midiInputEventIndex < midiInputEventCount; ) {
+                    jack_midi_event_t jackMidiEvent;
+                    jack_midi_event_get(&jackMidiEvent, midiInputBuffer, midiInputEventIndex);
+                    if (jackMidiEvent.time <= nextStep) {
+                        MidiEvent midiEvent(jackMidiEvent.size);
+                        memcpy(midiEvent.buffer, jackMidiEvent.buffer, jackMidiEvent.size * sizeof(jack_midi_data_t));
+                        midiInput.append(midiEvent);
+                        midiInputEventIndex++;
+                    } else {
+                        break;
+                    }
+                }
+                if (activeSequencer) {
+                    // leave the current step and output the corresponding midi (note off) events:
+                    midiOutput.resize(0);
+                    activeSequencer->processStepEnd(midiOutput);
+                    for (int i = 0; i < midiOutput.size(); i++) {
+                        const MidiEvent &event = midiOutput[i];
+                        jack_midi_event_write(midiOutputBuffer, nextStep, event.buffer, event.size);
+                    }
+                }
+                activeSequencer = sequencer;
+                // enter the next step and output the corresponding midi (note on) events:
+                midiOutput.resize(0);
+                sequencer = sequencer->processStepBegin(midiInput, midiOutput);
+                for (int i = 0; i < midiOutput.size(); i++) {
+                    const MidiEvent &event = midiOutput[i];
+                    jack_midi_event_write(midiOutputBuffer, nextStep, event.buffer, event.size);
+                }
+                stepPosition -= 1.0;
+                nextStep = (jack_nframes_t)(framesPerStep - stepPosition * framesPerStep);
+            }
+        } else if (activeSequencer) {
+            // leave the current step and output the corresponding midi (note off) events:
+            midiOutput.resize(0);
+            activeSequencer->stop(midiOutput);
+            for (int i = 0; i < midiOutput.size(); i++) {
+                const MidiEvent &event = midiOutput[i];
+                jack_midi_event_write(midiOutputBuffer, 0, event.buffer, event.size);
+            }
+            activeSequencer = 0;
         }
-    }
-    for (int i = 0; i < sequencers.size(); i++) {
-        sequencers[i]->afterMove(nframes, midiEventsInput);
-    }
-    qStableSort(midiEventsOutput);
-    // write sorted midi events to jack output midi buffer:
-    for (int i = 0; i < midiEventsOutput.size(); i++) {
-        const MidiEvent &event = midiEventsOutput[i];
-        jack_midi_event_write(midiOutputBuffer, event.time, event.buffer, event.size);
     }
     outboundCondition.wakeAll();
     return 0;

@@ -56,12 +56,12 @@ public:
     RoundaboutSequencer(QObject *parent = 0);
 
     void setNextStep(int step);
-    virtual void beforeMove();
-    virtual RoundaboutSequencer * move(jack_nframes_t nframes, jack_nframes_t time, const QVector<MidiEvent> &midiEventsInput, QVector<MidiEvent> &midiEventsOutput);
-    virtual void afterMove(jack_nframes_t nframes, const QVector<MidiEvent> &midiEventsInput);
-    virtual void stop(QVector<MidiEvent> &midiEventsOutput);
+
+    virtual RoundaboutSequencer * processStepBegin(const QVector<MidiEvent> &input, QVector<MidiEvent> &output);
+    virtual void processStepEnd(QVector<MidiEvent> &output);
+    void stop(QVector<MidiEvent> &output);
 protected:
-    virtual void processMidiEvents(jack_nframes_t start, jack_nframes_t end, const QVector<MidiEvent> &midiEventsInput);
+    virtual void processMidiEvents(const QVector<MidiEvent> &input);
     // Reimplemented from InboundEventsHelper:
     virtual void processInboundEvent(RoundaboutSequencerInboundEvent &event);
     // Reimplemented from OutboundEventsHelper:
@@ -77,11 +77,8 @@ public slots:
 private:
     unsigned char inputChannel, outputChannel, baseNoteNumber, activeBaseNoteNumber;
     QBitArray activeNotes;
-    int stepsPerBeat, currentStep, nextStep;
-    double beatsPerMinute, sampleRate;
-    jack_nframes_t framesPerStep, framesTillNextStep;
+    int stepsPerBeat, nextStep, activeStep;
     QVector<Step> steps;
-    jack_nframes_t midiProcessedUntil;
 };
 
 #endif // ROUNDABOUTSEQUENCER_H

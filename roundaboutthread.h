@@ -32,19 +32,17 @@
 class MidiEvent {
 public:
     MidiEvent() {}
-    MidiEvent(jack_nframes_t time_, size_t size_) :
-            time(time_),
+    MidiEvent(size_t size_) :
             size(size_)
     {}
-    jack_nframes_t time;
     size_t size;
     jack_midi_data_t buffer[3];
 };
 
 class MidiNoteOnEvent : public MidiEvent {
 public:
-    MidiNoteOnEvent(jack_nframes_t time, unsigned char channel, unsigned char noteNumber, unsigned char velocity) :
-            MidiEvent(time, 3)
+    MidiNoteOnEvent(unsigned char channel, unsigned char noteNumber, unsigned char velocity) :
+            MidiEvent(3)
     {
         buffer[0] = 0x90 + channel;
         buffer[1] = noteNumber;
@@ -54,8 +52,8 @@ public:
 
 class MidiNoteOffEvent : public MidiEvent {
 public:
-    MidiNoteOffEvent(jack_nframes_t time, unsigned char channel, unsigned char noteNumber, unsigned char velocity) :
-            MidiEvent(time, 3)
+    MidiNoteOffEvent(unsigned char channel, unsigned char noteNumber, unsigned char velocity) :
+            MidiEvent(3)
     {
         buffer[0] = 0x80 + channel;
         buffer[1] = noteNumber;
@@ -173,8 +171,9 @@ private:
     QVector<OutboundEventsInterface*> outboundEventsInterfaces;
     QVector<InboundEventsInterface*> inboundEventsInterfaces;
     QVector<RoundaboutSequencer*> sequencers;
-    RoundaboutSequencer *sequencer;
-    QVector<MidiEvent> midiEventsInput, midiEventsOutput;
+    RoundaboutSequencer *sequencer, *activeSequencer;
+    QVector<MidiEvent> midiInput, midiOutput;
+    int stepsPerBeat;
 
     // Will be called in the jack process thread:
     int process(jack_nframes_t nframes);
