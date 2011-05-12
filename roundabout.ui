@@ -93,9 +93,11 @@
    <addaction name="separator"/>
    <addaction name="actionAbout"/>
    <addaction name="separator"/>
-   <addaction name="actionTool1"/>
-   <addaction name="actionTool2"/>
-   <addaction name="actionTool3"/>
+   <addaction name="actionFourBeatsPerStep"/>
+   <addaction name="actionTwoBeatsPerStep"/>
+   <addaction name="actionOneStepPerBeat"/>
+   <addaction name="actionTwoStepsPerBeat"/>
+   <addaction name="actionFourStepsPerBeat"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionCreate_conductor">
@@ -117,28 +119,59 @@
     <string>About Roundabout</string>
    </property>
   </action>
-  <action name="actionTool1">
+  <action name="actionOneStepPerBeat">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Tool1</string>
+    <string>1</string>
+   </property>
+   <property name="toolTip">
+    <string>One step per beat</string>
    </property>
   </action>
-  <action name="actionTool2">
+  <action name="actionTwoStepsPerBeat">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Tool2</string>
+    <string>2</string>
+   </property>
+   <property name="toolTip">
+    <string>Two steps per beat</string>
    </property>
   </action>
-  <action name="actionTool3">
+  <action name="actionFourStepsPerBeat">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Tool3</string>
+    <string>4</string>
+   </property>
+   <property name="toolTip">
+    <string>Four steps per beat</string>
+   </property>
+  </action>
+  <action name="actionTwoBeatsPerStep">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>1/2</string>
+   </property>
+   <property name="toolTip">
+    <string>One step every two beats</string>
+   </property>
+  </action>
+  <action name="actionFourBeatsPerStep">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>1/4</string>
+   </property>
+   <property name="toolTip">
+    <string>One step every four beats</string>
    </property>
   </action>
  </widget>

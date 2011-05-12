@@ -29,9 +29,11 @@ Roundabout::Roundabout(RoundaboutThread *thread, QWidget *parent) :
     ui->setupUi(this);
     roundaboutThread->setParent(this);
     QActionGroup *toolGroup = new QActionGroup(this);
-    toolGroup->addAction(ui->actionTool1);
-    toolGroup->addAction(ui->actionTool2);
-    toolGroup->addAction(ui->actionTool3);
+    toolGroup->addAction(ui->actionFourBeatsPerStep);
+    toolGroup->addAction(ui->actionTwoBeatsPerStep);
+    toolGroup->addAction(ui->actionOneStepPerBeat);
+    toolGroup->addAction(ui->actionTwoStepsPerBeat);
+    toolGroup->addAction(ui->actionFourStepsPerBeat);
     ui->graphicsView->setRenderHint(QPainter::Antialiasing);
     // display our RoundaboutScene in the graphics view:
     ui->graphicsView->setScene(&roundaboutScene);
@@ -60,4 +62,29 @@ void Roundabout::on_actionAbout_triggered()
 {
     splashScreen.show();
     splashTimer.start(5000);
+}
+
+void Roundabout::on_actionOneStepPerBeat_triggered()
+{
+    roundaboutThread->setStepsPerBeat(1);
+}
+
+void Roundabout::on_actionTwoStepsPerBeat_triggered()
+{
+    roundaboutThread->setStepsPerBeat(2);
+}
+
+void Roundabout::on_actionFourStepsPerBeat_triggered()
+{
+    roundaboutThread->setStepsPerBeat(4);
+}
+
+void Roundabout::on_actionTwoBeatsPerStep_triggered()
+{
+    roundaboutThread->setStepsPerBeat(0.5);
+}
+
+void Roundabout::on_actionFourBeatsPerStep_triggered()
+{
+    roundaboutThread->setStepsPerBeat(0.25);
 }

@@ -43,6 +43,16 @@ private slots:
     void on_actionCreate_conductor_triggered();
     void on_actionAbout_triggered();
 
+    void on_actionOneStepPerBeat_triggered();
+
+    void on_actionTwoStepsPerBeat_triggered();
+
+    void on_actionFourStepsPerBeat_triggered();
+
+    void on_actionTwoBeatsPerStep_triggered();
+
+    void on_actionFourBeatsPerStep_triggered();
+
 private:
     Ui::Roundabout *ui;
     QSplashScreen splashScreen;

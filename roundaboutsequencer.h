@@ -57,11 +57,11 @@ public:
 
     void setNextStep(int step);
 
-    virtual RoundaboutSequencer * processStepBegin(const QVector<MidiEvent> &input, QVector<MidiEvent> &output);
+    virtual RoundaboutSequencer * processStepBegin(QVector<MidiEvent> &output);
     virtual void processStepEnd(QVector<MidiEvent> &output);
     void stop(QVector<MidiEvent> &output);
-protected:
     virtual void processMidiEvents(const QVector<MidiEvent> &input);
+protected:
     // Reimplemented from InboundEventsHelper:
     virtual void processInboundEvent(RoundaboutSequencerInboundEvent &event);
     // Reimplemented from OutboundEventsHelper:

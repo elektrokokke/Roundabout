@@ -129,9 +129,11 @@ class RoundaboutSequencer;
 
 struct RoundaboutThreadInboundEvent {
     enum EventType {
-        CREATE_SEQUENCER
+        CREATE_SEQUENCER,
+        CHANGE_STEPS_PER_BEAT
     } eventType;
     RoundaboutSequencer *sequencer;
+    double stepsPerBeat;
 };
 struct RoundaboutThreadOutboundEvent {
     enum EventType {
@@ -154,6 +156,7 @@ signals:
     void createdSequencer(RoundaboutSequencer *sequencer);
 public slots:
     void createSequencer();
+    void setStepsPerBeat(double stepsPerBeat);
 protected:
     // Reimplemented from QThread:
     virtual void run();
@@ -173,7 +176,7 @@ private:
     QVector<RoundaboutSequencer*> sequencers;
     RoundaboutSequencer *sequencer, *activeSequencer;
     QVector<MidiEvent> midiInput, midiOutput;
-    int stepsPerBeat;
+    double stepsPerBeat;
     bool stepExpectedAtNextBufferBegin;
 
     // Will be called in the jack process thread:

@@ -43,10 +43,8 @@ void RoundaboutSequencer::setNextStep(int step)
     nextStep = step;
 }
 
-RoundaboutSequencer * RoundaboutSequencer::processStepBegin(const QVector<MidiEvent> &input, QVector<MidiEvent> &output)
+RoundaboutSequencer * RoundaboutSequencer::processStepBegin(QVector<MidiEvent> &output)
 {
-    // process midi input:
-    processMidiEvents(input);
     // determine current step:
     activeStep = nextStep;
     activeNotes = steps[activeStep].activeNotes;

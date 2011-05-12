@@ -27,7 +27,7 @@ RoundaboutThread::RoundaboutThread(QObject *parent) :
     sequencer(0),
     activeSequencer(0),
     stepsPerBeat(4),
-    stepExpectedAtNextBufferBegin(false)
+    stepExpectedAtNextBufferBegin(true)
 {
     midiInput.reserve(4096);
     midiOutput.reserve(4096);
@@ -106,6 +106,14 @@ void RoundaboutThread::createSequencer()
     writeInboundEvent(inboundEvent);
 }
 
+void RoundaboutThread::setStepsPerBeat(double stepsPerBeat)
+{
+    RoundaboutThreadInboundEvent inboundEvent;
+    inboundEvent.eventType = RoundaboutThreadInboundEvent::CHANGE_STEPS_PER_BEAT;
+    inboundEvent.stepsPerBeat = stepsPerBeat;
+    writeInboundEvent(inboundEvent);
+}
+
 void RoundaboutThread::run()
 {
     for (; !shutdown; ) {
@@ -128,6 +136,8 @@ void RoundaboutThread::processInboundEvent(RoundaboutThreadInboundEvent &inbound
         outboundEvent.eventType = RoundaboutThreadOutboundEvent::CREATED_SEQUENCER;
         outboundEvent.sequencer = inboundEvent.sequencer;
         writeOutboundEvent(outboundEvent);
+    } else if  (inboundEvent.eventType == RoundaboutThreadInboundEvent::CHANGE_STEPS_PER_BEAT) {
+        stepsPerBeat = inboundEvent.stepsPerBeat;
     }
 }
 
@@ -168,18 +178,17 @@ int RoundaboutThread::process(jack_nframes_t nframes)
             double currentTick = (double)bbt_offset * ticksPerFrame + (double)currentPos.tick;
             // beat position is current tick / ticks per beat:
             double currentBeat = currentTick / (double)currentPos.ticks_per_beat + (double)(currentPos.beat - 1);
-            double beatPosition = currentBeat - (int)currentBeat;
             // current step is position in beat * steps per beat:
-            double currentStep = beatPosition * (double)stepsPerBeat;
+            double currentStep = currentBeat * stepsPerBeat;
             double stepPosition = currentStep - (int)currentStep;
-            double framesPerStep = framesPerMinute / ((double)currentPos.beats_per_minute * (double)stepsPerBeat);
+            double framesPerStep = framesPerMinute / ((double)currentPos.beats_per_minute * stepsPerBeat);
             jack_nframes_t nextStep = (jack_nframes_t)(framesPerStep - stepPosition * framesPerStep);
             if (stepExpectedAtNextBufferBegin && (nextStep > nframes / 2)) {
                 nextStep = 0;
                 stepPosition += 1.0;
             }
             for (; nextStep < nframes; ) {
-                // get all midi input events up to nextStep:
+                // process all midi input events up to nextStep:
                 midiInput.resize(0);
                 for (; midiInputEventIndex < midiInputEventCount; ) {
                     jack_midi_event_t jackMidiEvent;
@@ -193,6 +202,9 @@ int RoundaboutThread::process(jack_nframes_t nframes)
                         break;
                     }
                 }
+                for (int i = 0; i < sequencers.size(); i++) {
+                    sequencers[i]->processMidiEvents(midiInput);
+                }
                 if (activeSequencer) {
                     // leave the current step and output the corresponding midi (note off) events:
                     midiOutput.resize(0);
@@ -205,13 +217,26 @@ int RoundaboutThread::process(jack_nframes_t nframes)
                 activeSequencer = sequencer;
                 // enter the next step and output the corresponding midi (note on) events:
                 midiOutput.resize(0);
-                sequencer = sequencer->processStepBegin(midiInput, midiOutput);
+                sequencer = sequencer->processStepBegin(midiOutput);
                 for (int i = 0; i < midiOutput.size(); i++) {
                     const MidiEvent &event = midiOutput[i];
                     jack_midi_event_write(midiOutputBuffer, nextStep, event.buffer, event.size);
                 }
                 stepPosition -= 1.0;
                 nextStep = (jack_nframes_t)(framesPerStep - stepPosition * framesPerStep);
+            }
+            // process all midi input events that are left:
+            midiInput.resize(0);
+            for (; midiInputEventIndex < midiInputEventCount; ) {
+                jack_midi_event_t jackMidiEvent;
+                jack_midi_event_get(&jackMidiEvent, midiInputBuffer, midiInputEventIndex);
+                MidiEvent midiEvent(jackMidiEvent.size);
+                memcpy(midiEvent.buffer, jackMidiEvent.buffer, jackMidiEvent.size * sizeof(jack_midi_data_t));
+                midiInput.append(midiEvent);
+                midiInputEventIndex++;
+            }
+            for (int i = 0; i < sequencers.size(); i++) {
+                sequencers[i]->processMidiEvents(midiInput);
             }
             stepExpectedAtNextBufferBegin = (nextStep == nframes);
         } else if (activeSequencer) {
@@ -223,6 +248,7 @@ int RoundaboutThread::process(jack_nframes_t nframes)
                 jack_midi_event_write(midiOutputBuffer, 0, event.buffer, event.size);
             }
             activeSequencer = 0;
+            stepExpectedAtNextBufferBegin = true;
         }
     }
     outboundCondition.wakeAll();
