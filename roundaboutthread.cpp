@@ -120,6 +120,7 @@ void RoundaboutThread::processInboundEvent(RoundaboutThreadInboundEvent &inbound
         if (sequencer == 0) {
             sequencer = inboundEvent.sequencer;
         }
+        sequencers.append(inboundEvent.sequencer);
         RoundaboutThreadOutboundEvent outboundEvent;
         outboundEvent.eventType = RoundaboutThreadOutboundEvent::CREATED_SEQUENCER;
         outboundEvent.sequencer = inboundEvent.sequencer;
@@ -164,8 +165,14 @@ int RoundaboutThread::process(jack_nframes_t nframes)
     jack_midi_clear_buffer(midiOutputBuffer);
     processInboundEvents();
     midiEventsOutput.resize(0);
+    for (int i = 0; i < sequencers.size(); i++) {
+        sequencers[i]->beforeMove();
+    }
     if (sequencer && currentState == JackTransportRolling) {
         sequencer = sequencer->move(nframes, 0, midiEventsInput, midiEventsOutput);
+    }
+    for (int i = 0; i < sequencers.size(); i++) {
+        sequencers[i]->afterMove(nframes, midiEventsInput);
     }
     qStableSort(midiEventsOutput);
     // write sorted midi events to jack output midi buffer:

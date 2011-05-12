@@ -172,6 +172,7 @@ private:
     jack_nframes_t sampleRate;
     QVector<OutboundEventsInterface*> outboundEventsInterfaces;
     QVector<InboundEventsInterface*> inboundEventsInterfaces;
+    QVector<RoundaboutSequencer*> sequencers;
     RoundaboutSequencer *sequencer;
     QVector<MidiEvent> midiEventsInput, midiEventsOutput;
 

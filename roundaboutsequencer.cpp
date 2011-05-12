@@ -48,13 +48,19 @@ void RoundaboutSequencer::setNextStep(int step)
     framesTillNextStep = 0;
 }
 
+void RoundaboutSequencer::beforeMove()
+{
+    midiProcessedUntil = 0;
+}
+
 RoundaboutSequencer * RoundaboutSequencer::move(jack_nframes_t nframes, jack_nframes_t time, const QVector<MidiEvent> &midiEventsInput, QVector<MidiEvent> &midiEventsOutput)
 {
     jack_nframes_t timeFrom = time;
     for (; framesTillNextStep < (int)nframes; ) {
         time += framesTillNextStep;
         // process all input midi events between timeFrom and time:
-        processMidiEvents(timeFrom, time, midiEventsInput);
+        processMidiEvents(midiProcessedUntil, time + 1, midiEventsInput);
+        midiProcessedUntil = time + 1;
         timeFrom = time;
         nframes -= framesTillNextStep;
         RoundaboutSequencerOutboundEvent event;
@@ -90,11 +96,15 @@ RoundaboutSequencer * RoundaboutSequencer::move(jack_nframes_t nframes, jack_nfr
         }
         framesTillNextStep += framesPerStep;
     }
-    time += nframes;
-    // process all input midi events between timeFrom and time:
-    processMidiEvents(timeFrom, time, midiEventsInput);
     framesTillNextStep -= nframes;
     return this;
+}
+
+void RoundaboutSequencer::afterMove(jack_nframes_t nframes, const QVector<MidiEvent> &midiEventsInput)
+{
+    // process all unprocessed midi events:
+    processMidiEvents(midiProcessedUntil, nframes, midiEventsInput);
+    midiProcessedUntil = nframes;
 }
 
 void RoundaboutSequencer::processMidiEvents(jack_nframes_t start, jack_nframes_t end, const QVector<MidiEvent> &midiEventsInput)
@@ -103,7 +113,8 @@ void RoundaboutSequencer::processMidiEvents(jack_nframes_t start, jack_nframes_t
         if (midiEventsInput[i].time >= start) {
             // interpret midi note on events to set the base note number:
             const MidiEvent &event = midiEventsInput[i];
-            if (((event.buffer[0] & 0x0F) == inputChannel) && ((event.buffer[0] & 0xF0) == 0x90)) {
+            //if (((event.buffer[0] & 0x0F) == inputChannel) && ((event.buffer[0] & 0xF0) == 0x90)) {
+            if ((event.buffer[0] & 0xF0) == 0x90) {
                 baseNoteNumber = event.buffer[1];
             }
         }
