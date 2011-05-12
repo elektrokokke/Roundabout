@@ -144,6 +144,9 @@ bool operator <(const MidiEvent &a, const MidiEvent &b)
 
 int RoundaboutThread::process(jack_nframes_t nframes)
 {
+    // get transport state:
+    jack_position_t currentPos;
+    jack_transport_state_t currentState = jack_transport_query(client, &currentPos);
     // get midi input buffer:
     void *midiInputBuffer = jack_port_get_buffer(midiInputPort, nframes);
     // copy input midi events:
@@ -161,7 +164,7 @@ int RoundaboutThread::process(jack_nframes_t nframes)
     jack_midi_clear_buffer(midiOutputBuffer);
     processInboundEvents();
     midiEventsOutput.resize(0);
-    if (sequencer) {
+    if (sequencer && currentState == JackTransportRolling) {
         sequencer = sequencer->move(nframes, 0, midiEventsInput, midiEventsOutput);
     }
     qStableSort(midiEventsOutput);
