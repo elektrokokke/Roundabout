@@ -56,7 +56,7 @@ void RoundaboutSequencer::beforeMove()
 RoundaboutSequencer * RoundaboutSequencer::move(jack_nframes_t nframes, jack_nframes_t time, const QVector<MidiEvent> &midiEventsInput, QVector<MidiEvent> &midiEventsOutput)
 {
     jack_nframes_t timeFrom = time;
-    for (; framesTillNextStep < (int)nframes; ) {
+    for (; framesTillNextStep < nframes; ) {
         time += framesTillNextStep;
         // process all input midi events between timeFrom and time:
         processMidiEvents(midiProcessedUntil, time + 1, midiEventsInput);
@@ -105,6 +105,25 @@ void RoundaboutSequencer::afterMove(jack_nframes_t nframes, const QVector<MidiEv
     // process all unprocessed midi events:
     processMidiEvents(midiProcessedUntil, nframes, midiEventsInput);
     midiProcessedUntil = nframes;
+}
+
+void RoundaboutSequencer::stop(QVector<MidiEvent> &midiEventsOutput)
+{
+    if (currentStep >= 0) {
+        RoundaboutSequencerOutboundEvent event;
+        event.eventType = RoundaboutSequencerOutboundEvent::LEFT_STEP;
+        event.step = currentStep;
+        writeOutboundEvent(event);
+        // create midi note off event:
+        for (int note = 0; note < activeNotes.size(); note++) {
+            if (activeNotes[note]) {
+                midiEventsOutput.append(MidiNoteOffEvent(0, outputChannel, qBound(0, activeBaseNoteNumber + note, 127), 127));
+            }
+        }
+        activeNotes.clear();
+    }
+    currentStep = -1;
+    setNextStep(0);
 }
 
 void RoundaboutSequencer::processMidiEvents(jack_nframes_t start, jack_nframes_t end, const QVector<MidiEvent> &midiEventsInput)
@@ -163,7 +182,7 @@ void RoundaboutSequencer::processInboundEvent(RoundaboutSequencerInboundEvent &e
     if (event.eventType == RoundaboutSequencerInboundEvent::TOGGLE_STEP) {
         steps[event.step].active = !steps[event.step].active;
     } else if (event.eventType == RoundaboutSequencerInboundEvent::TOGGLE_NOTE) {
-        Q_ASSERT((event.note >= 0) && (event.note < activeNotes.size()));
+        Q_ASSERT((event.note >= 0) && (event.note < steps[event.step].activeNotes.size()));
         steps[event.step].activeNotes.toggleBit(event.note);
     } else if (event.eventType == RoundaboutSequencerInboundEvent::CONNECT_STEP) {
         steps[event.step].connection = event.sequencer;

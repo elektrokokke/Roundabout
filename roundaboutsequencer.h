@@ -59,6 +59,7 @@ public:
     virtual void beforeMove();
     virtual RoundaboutSequencer * move(jack_nframes_t nframes, jack_nframes_t time, const QVector<MidiEvent> &midiEventsInput, QVector<MidiEvent> &midiEventsOutput);
     virtual void afterMove(jack_nframes_t nframes, const QVector<MidiEvent> &midiEventsInput);
+    virtual void stop(QVector<MidiEvent> &midiEventsOutput);
 protected:
     virtual void processMidiEvents(jack_nframes_t start, jack_nframes_t end, const QVector<MidiEvent> &midiEventsInput);
     // Reimplemented from InboundEventsHelper:

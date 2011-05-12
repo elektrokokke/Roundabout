@@ -170,6 +170,10 @@ int RoundaboutThread::process(jack_nframes_t nframes)
     }
     if (sequencer && currentState == JackTransportRolling) {
         sequencer = sequencer->move(nframes, 0, midiEventsInput, midiEventsOutput);
+    } else if (currentState == JackTransportStopped) {
+        for (int i = 0; i < sequencers.size(); i++) {
+            sequencers[i]->stop(midiEventsOutput);
+        }
     }
     for (int i = 0; i < sequencers.size(); i++) {
         sequencers[i]->afterMove(nframes, midiEventsInput);
