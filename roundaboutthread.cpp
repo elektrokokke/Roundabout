@@ -248,6 +248,7 @@ int RoundaboutThread::process(jack_nframes_t nframes)
                 jack_midi_event_write(midiOutputBuffer, 0, event.buffer, event.size);
             }
             activeSequencer = 0;
+            sequencer = sequencers.first();
             stepExpectedAtNextBufferBegin = true;
         }
     }
