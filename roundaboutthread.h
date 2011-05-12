@@ -174,6 +174,7 @@ private:
     RoundaboutSequencer *sequencer, *activeSequencer;
     QVector<MidiEvent> midiInput, midiOutput;
     int stepsPerBeat;
+    bool stepExpectedAtNextBufferBegin;
 
     // Will be called in the jack process thread:
     int process(jack_nframes_t nframes);

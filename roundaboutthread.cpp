@@ -26,7 +26,8 @@ RoundaboutThread::RoundaboutThread(QObject *parent) :
     client(0),
     sequencer(0),
     activeSequencer(0),
-    stepsPerBeat(4)
+    stepsPerBeat(4),
+    stepExpectedAtNextBufferBegin(false)
 {
     midiInput.reserve(4096);
     midiOutput.reserve(4096);
@@ -173,6 +174,10 @@ int RoundaboutThread::process(jack_nframes_t nframes)
             double stepPosition = currentStep - (int)currentStep;
             double framesPerStep = framesPerMinute / ((double)currentPos.beats_per_minute * (double)stepsPerBeat);
             jack_nframes_t nextStep = (jack_nframes_t)(framesPerStep - stepPosition * framesPerStep);
+            if (stepExpectedAtNextBufferBegin && (nextStep > nframes / 2)) {
+                nextStep = 0;
+                stepPosition += 1.0;
+            }
             for (; nextStep < nframes; ) {
                 // get all midi input events up to nextStep:
                 midiInput.resize(0);
@@ -208,6 +213,7 @@ int RoundaboutThread::process(jack_nframes_t nframes)
                 stepPosition -= 1.0;
                 nextStep = (jack_nframes_t)(framesPerStep - stepPosition * framesPerStep);
             }
+            stepExpectedAtNextBufferBegin = (nextStep == nframes);
         } else if (activeSequencer) {
             // leave the current step and output the corresponding midi (note off) events:
             midiOutput.resize(0);
