@@ -271,14 +271,15 @@ int RoundaboutThread::process(jack_nframes_t nframes)
         } else if (activeSequencer) {
             // leave the current step and output the corresponding midi (note off) events:
             midiOutput.resize(0);
-            activeSequencer->stop(midiOutput);
+            for (int i = 0; i < sequencers.size(); i++) {
+                sequencers[i]->processStop(midiOutput);
+            }
             for (int i = 0; i < midiOutput.size(); i++) {
                 const MidiEvent &event = midiOutput[i];
                 jack_midi_event_write(midiOutputBuffer, 0, event.buffer, event.size);
             }
             activeSequencer = 0;
             sequencer = sequencers.first();
-            sequencer->setNextStep(0);
             stepExpectedAtNextBufferBegin = true;
         }
     }

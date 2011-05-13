@@ -98,23 +98,31 @@ RoundaboutSequencer * RoundaboutSequencer::processStepBegin(QVector<MidiEvent> &
 
 void RoundaboutSequencer::processStepEnd(QVector<MidiEvent> &output)
 {
-    // send step left event:
-    RoundaboutSequencerOutboundEvent event;
-    event.eventType = RoundaboutSequencerOutboundEvent::LEFT_STEP;
-    event.step = activeStep;
-    writeOutboundEvent(event);
-    // create midi note off events:
-    for (int note = 0; note < activeNotes.size(); note++) {
-        if (activeNotes[note]) {
-            output.append(MidiNoteOffEvent(outputChannel, qBound(0, activeBaseNoteNumber + note, 127), 127));
+    if (activeStep >= 0) {
+        // send step left event:
+        RoundaboutSequencerOutboundEvent event;
+        event.eventType = RoundaboutSequencerOutboundEvent::LEFT_STEP;
+        event.step = activeStep;
+        writeOutboundEvent(event);
+        // create midi note off events:
+        for (int note = 0; note < activeNotes.size(); note++) {
+            if (activeNotes[note]) {
+                output.append(MidiNoteOffEvent(outputChannel, qBound(0, activeBaseNoteNumber + note, 127), 127));
+            }
         }
+        activeStep = -1;
     }
 }
 
-void RoundaboutSequencer::stop(QVector<MidiEvent> &output)
+void RoundaboutSequencer::processStop(QVector<MidiEvent> &output)
 {
     processStepEnd(output);
+    // reset position:
     setNextStep(0);
+    // reset branch counters:
+    for (int i = 0; i < steps.size(); i++) {
+        steps[i].branchCounter = 0;
+    }
 }
 
 void RoundaboutSequencer::processMidiEvents(const QVector<MidiEvent> &input)
