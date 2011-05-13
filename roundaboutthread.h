@@ -155,6 +155,7 @@ public:
     bool isValid() const;
     virtual void processInboundEvents();
     virtual void processOutboundEvents();
+    QString getJackClientName() const;
 signals:
     void createdSequencer(RoundaboutSequencer *sequencer);
 public slots:

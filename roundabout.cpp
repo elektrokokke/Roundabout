@@ -30,6 +30,8 @@ Roundabout::Roundabout(RoundaboutThread *thread, QWidget *parent) :
 {
     ui->setupUi(this);
     roundaboutThread->setParent(this);
+    // set window title to jack client name:
+    setWindowTitle(roundaboutThread->getJackClientName());
     // put all step tempo buttons into one group (to allow only one of them to be active):
     QActionGroup *toolGroup = new QActionGroup(this);
     toolGroup->addAction(ui->actionFourBeatsPerStep);

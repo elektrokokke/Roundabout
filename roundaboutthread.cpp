@@ -77,6 +77,16 @@ bool RoundaboutThread::isValid() const
     return client;
 }
 
+void RoundaboutThread::processInboundEvents()
+{
+    // process our events:
+    InboundEventsHelper<RoundaboutThreadInboundEvent>::processInboundEvents();
+    // process other events:
+    for (int i = 0; i < inboundEventsInterfaces.size(); i++) {
+        inboundEventsInterfaces[i]->processInboundEvents();
+    }
+}
+
 void RoundaboutThread::processOutboundEvents()
 {
     // process our events:
@@ -87,14 +97,9 @@ void RoundaboutThread::processOutboundEvents()
     }
 }
 
-void RoundaboutThread::processInboundEvents()
+QString RoundaboutThread::getJackClientName() const
 {
-    // process our events:
-    InboundEventsHelper<RoundaboutThreadInboundEvent>::processInboundEvents();
-    // process other events:
-    for (int i = 0; i < inboundEventsInterfaces.size(); i++) {
-        inboundEventsInterfaces[i]->processInboundEvents();
-    }
+    return QString(jack_get_client_name(client));
 }
 
 void RoundaboutThread::createSequencer()
