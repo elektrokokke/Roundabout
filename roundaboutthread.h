@@ -130,10 +130,13 @@ class RoundaboutSequencer;
 struct RoundaboutThreadInboundEvent {
     enum EventType {
         CREATE_SEQUENCER,
-        CHANGE_STEPS_PER_BEAT
+        CHANGE_STEPS_PER_BEAT,
+        CHANGE_INPUT_CHANNEL,
+        CHANGE_OUTPUT_CHANNEL
     } eventType;
     RoundaboutSequencer *sequencer;
     double stepsPerBeat;
+    unsigned char channel;
 };
 struct RoundaboutThreadOutboundEvent {
     enum EventType {
@@ -157,6 +160,8 @@ signals:
 public slots:
     void createSequencer();
     void setStepsPerBeat(double stepsPerBeat);
+    void setInputChannel(int channel);
+    void setOutputChannel(int channel);
 protected:
     // Reimplemented from QThread:
     virtual void run();

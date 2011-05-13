@@ -19,6 +19,8 @@
 
 #include "roundabout.h"
 #include "ui_roundabout.h"
+#include <QSpinBox>
+#include <QLabel>
 
 Roundabout::Roundabout(RoundaboutThread *thread, QWidget *parent) :
     QMainWindow(parent),
@@ -28,12 +30,32 @@ Roundabout::Roundabout(RoundaboutThread *thread, QWidget *parent) :
 {
     ui->setupUi(this);
     roundaboutThread->setParent(this);
+    // put all step tempo buttons into one group (to allow only one of them to be active):
     QActionGroup *toolGroup = new QActionGroup(this);
     toolGroup->addAction(ui->actionFourBeatsPerStep);
     toolGroup->addAction(ui->actionTwoBeatsPerStep);
     toolGroup->addAction(ui->actionOneStepPerBeat);
     toolGroup->addAction(ui->actionTwoStepsPerBeat);
     toolGroup->addAction(ui->actionFourStepsPerBeat);
+    // add additional controls to the toolbar:
+    ui->mainToolBar->insertWidget(ui->actionFourBeatsPerStep, new QLabel("Steps per beat: ", ui->mainToolBar));
+    QSpinBox *inputChannelSpinBox = new QSpinBox(ui->mainToolBar);
+    ui->mainToolBar->addSeparator();
+    inputChannelSpinBox->setRange(0, 15);
+    inputChannelSpinBox->setValue(0);
+    ui->mainToolBar->addWidget(new QLabel("Input MIDI channel: ", ui->mainToolBar));
+    ui->mainToolBar->addWidget(inputChannelSpinBox);
+    ui->mainToolBar->addSeparator();
+    QObject::connect(inputChannelSpinBox, SIGNAL(valueChanged(int)), roundaboutThread, SLOT(setInputChannel(int)));
+    QSpinBox *outputChannelSpinBox = new QSpinBox(ui->mainToolBar);
+    ui->mainToolBar->addSeparator();
+    outputChannelSpinBox->setRange(0, 15);
+    outputChannelSpinBox->setValue(0);
+    ui->mainToolBar->addWidget(new QLabel("Output MIDI channel: ", ui->mainToolBar));
+    ui->mainToolBar->addWidget(outputChannelSpinBox);
+    ui->mainToolBar->addSeparator();
+    QObject::connect(outputChannelSpinBox, SIGNAL(valueChanged(int)), roundaboutThread, SLOT(setOutputChannel(int)));
+
     ui->graphicsView->setRenderHint(QPainter::Antialiasing);
     // display our RoundaboutScene in the graphics view:
     ui->graphicsView->setScene(&roundaboutScene);

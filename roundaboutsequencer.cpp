@@ -18,6 +18,7 @@
  */
 
 #include "roundaboutsequencer.h"
+#include <QDebug>
 
 RoundaboutSequencer::RoundaboutSequencer(QObject *parent) :
     QObject(parent),
@@ -36,6 +37,18 @@ RoundaboutSequencer::RoundaboutSequencer(QObject *parent) :
         steps[i].activeNotes = activeNotes;
         steps[i].connection = 0;
     }
+}
+
+void RoundaboutSequencer::processChangeInputChannel(unsigned char channel)
+{
+    qDebug() << "input channel" << channel;
+    inputChannel = channel;
+}
+
+void RoundaboutSequencer::processChangeOutputChannel(unsigned char channel)
+{
+    qDebug() << "output channel" << channel;
+    outputChannel = channel;
 }
 
 void RoundaboutSequencer::setNextStep(int step)
@@ -99,9 +112,7 @@ void RoundaboutSequencer::processMidiEvents(const QVector<MidiEvent> &input)
     for (int i = 0; i < input.size(); i++) {
         // interpret midi note on events to set the base note number:
         const MidiEvent &event = input[i];
-        //if (((event.buffer[0] & 0x0F) == inputChannel) && ((event.buffer[0] & 0xF0) == 0x90)) {
-        // ignore channel for now...
-        if ((event.buffer[0] & 0xF0) == 0x90) {
+        if (((event.buffer[0] & 0x0F) == inputChannel) && ((event.buffer[0] & 0xF0) == 0x90)) {
             baseNoteNumber = event.buffer[1];
         }
     }

@@ -55,6 +55,8 @@ public:
     };
     RoundaboutSequencer(QObject *parent = 0);
 
+    void processChangeInputChannel(unsigned char channel);
+    void processChangeOutputChannel(unsigned char channel);
     void setNextStep(int step);
 
     virtual RoundaboutSequencer * processStepBegin(QVector<MidiEvent> &output);

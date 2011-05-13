@@ -114,6 +114,22 @@ void RoundaboutThread::setStepsPerBeat(double stepsPerBeat)
     writeInboundEvent(inboundEvent);
 }
 
+void RoundaboutThread::setInputChannel(int channel)
+{
+    RoundaboutThreadInboundEvent inboundEvent;
+    inboundEvent.eventType = RoundaboutThreadInboundEvent::CHANGE_INPUT_CHANNEL;
+    inboundEvent.channel = qBound(0, channel, 15);
+    writeInboundEvent(inboundEvent);
+}
+
+void RoundaboutThread::setOutputChannel(int channel)
+{
+    RoundaboutThreadInboundEvent inboundEvent;
+    inboundEvent.eventType = RoundaboutThreadInboundEvent::CHANGE_OUTPUT_CHANNEL;
+    inboundEvent.channel = qBound(0, channel, 15);
+    writeInboundEvent(inboundEvent);
+}
+
 void RoundaboutThread::run()
 {
     for (; !shutdown; ) {
@@ -136,8 +152,16 @@ void RoundaboutThread::processInboundEvent(RoundaboutThreadInboundEvent &inbound
         outboundEvent.eventType = RoundaboutThreadOutboundEvent::CREATED_SEQUENCER;
         outboundEvent.sequencer = inboundEvent.sequencer;
         writeOutboundEvent(outboundEvent);
-    } else if  (inboundEvent.eventType == RoundaboutThreadInboundEvent::CHANGE_STEPS_PER_BEAT) {
+    } else if (inboundEvent.eventType == RoundaboutThreadInboundEvent::CHANGE_STEPS_PER_BEAT) {
         stepsPerBeat = inboundEvent.stepsPerBeat;
+    } else if (inboundEvent.eventType == RoundaboutThreadInboundEvent::CHANGE_INPUT_CHANNEL) {
+        for (int i = 0; i < sequencers.size(); i++) {
+            sequencers[i]->processChangeInputChannel(inboundEvent.channel);
+        }
+    } else if (inboundEvent.eventType == RoundaboutThreadInboundEvent::CHANGE_OUTPUT_CHANNEL) {
+        for (int i = 0; i < sequencers.size(); i++) {
+            sequencers[i]->processChangeOutputChannel(inboundEvent.channel);
+        }
     }
 }
 
