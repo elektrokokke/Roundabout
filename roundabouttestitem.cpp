@@ -250,9 +250,9 @@ void RoundaboutTestButtonItem::mousePressEvent(QGraphicsSceneMouseEvent * event)
 
 RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(RoundaboutSequencerItem *sequencerItem_, int step_, QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
+    RoundaboutTestConnectable(true, true),
     step(step_),
     sequencerItem(sequencerItem_),
-    RoundaboutTestConnectable(true, true),
     myShape(BENT_AT_BEGIN),
     normalColor("lightsteelblue"),
     highlightedColor(Qt::white),
