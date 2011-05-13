@@ -31,27 +31,40 @@ struct RoundaboutSequencerInboundEvent {
         TOGGLE_STEP,
         TOGGLE_NOTE,
         CONNECT_STEP,
+        CHANGE_STEP_BRANCH_FREQUENCY
     } eventType;
-    int step, note, connectedStep;
+    int step, note, connectedStep, branchFrequency, continueFrequency;
     RoundaboutSequencer *sequencer;
 };
 struct RoundaboutSequencerOutboundEvent {
     enum EventType {
         ENTERED_STEP,
-        LEFT_STEP
+        LEFT_STEP,
+        CHANGED_BRANCH_COUNTER
     } eventType;
-    int step;
+    int step, branchCounter;
 };
 
 class RoundaboutSequencer : public QObject, public InboundEventsHelper<RoundaboutSequencerInboundEvent>, public OutboundEventsHelper<RoundaboutSequencerOutboundEvent>
 {
     Q_OBJECT
 public:
-    struct Step {
+    class Step {
+    public:
+        Step() :
+            active(true),
+            activeNotes(13),
+            connection(0),
+            connectedStep(0),
+            branchFrequency(1),
+            continueFrequency(0),
+            branchCounter(0)
+        {}
         bool active;
         QBitArray activeNotes;
         RoundaboutSequencer *connection;
         int connectedStep;
+        int branchFrequency, continueFrequency, branchCounter;
     };
     RoundaboutSequencer(QObject *parent = 0);
 
@@ -71,11 +84,13 @@ protected:
 signals:
     void enteredStep(int step);
     void leftStep(int step);
+    void changedBranchCounter(int step, int branchCounter);
 public slots:
     void toggleStep(int step);
     void toggleNote(int step, int note);
     void connect(int step, RoundaboutSequencer *sequencer, int connectedStep);
     void disconnect(int step);
+    void setStepBranchFrequency(int step, int branchFrequency, int continueFrequency);
 private:
     unsigned char inputChannel, outputChannel, baseNoteNumber, activeBaseNoteNumber;
     QBitArray activeNotes;

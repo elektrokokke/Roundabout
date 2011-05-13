@@ -19,6 +19,7 @@
 
 #include "roundabouttestitem.h"
 #include "roundaboutsequencer.h"
+#include "roundaboutsegmentdialog.h"
 #include <QPen>
 #include <QBrush>
 #include <QFont>
@@ -257,9 +258,11 @@ RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(RoundaboutSequencerItem *se
     normalColor("lightsteelblue"),
     highlightedColor(Qt::white),
     stateColor("steelblue"),
-    state(true),
+    active(true),
     hover(false),
-    highlight(false)
+    highlight(false),
+    branchFrequency(1),
+    continueFrequency(0)
 {
     Q_ASSERT(outerRect.width() == outerRect.height());
     Q_ASSERT(innerRect.width() == innerRect.height());
@@ -267,7 +270,7 @@ RoundaboutTestSegmentItem::RoundaboutTestSegmentItem(RoundaboutSequencerItem *se
     setPen(QPen(QBrush(Qt::white), 3));
     setHighlight(false);
     setAcceptHoverEvents(true);
-    setAcceptedMouseButtons(Qt::LeftButton);
+    setAcceptedMouseButtons(Qt::LeftButton | Qt::RightButton);
     setCursor(Qt::ArrowCursor);
     setFlag(QGraphicsItem::ItemSendsGeometryChanges);
     setFlag(QGraphicsItem::ItemSendsScenePositionChanges);
@@ -318,11 +321,11 @@ RoundaboutSequencerItem * RoundaboutTestSegmentItem::getSequencerItem()
 void RoundaboutTestSegmentItem::setHighlight(bool highlight)
 {
     this->highlight = highlight;
-    if ((hover && !state) || (highlight && state)) {
+    if ((hover && !active) || (highlight && active)) {
         setBrush(QBrush(highlightedColor));
-    } else if (hover && state) {
+    } else if (hover && active) {
         setBrush(QBrush(mixColors(stateColor, highlightedColor, 1, 3)));
-    } else if (state) {
+    } else if (active) {
         setBrush(QBrush(stateColor));
     } else {
         setBrush(QBrush(normalColor));
@@ -331,7 +334,7 @@ void RoundaboutTestSegmentItem::setHighlight(bool highlight)
 
 bool RoundaboutTestSegmentItem::getState() const
 {
-    return state;
+    return active;
 }
 
 void RoundaboutTestSegmentItem::setShape(Shape shape)
@@ -389,8 +392,16 @@ void RoundaboutTestSegmentItem::hoverLeaveEvent(QGraphicsSceneHoverEvent * event
 void RoundaboutTestSegmentItem::mousePressEvent(QGraphicsSceneMouseEvent * event)
 {
     event->accept();
-    state = !state;
-    setHighlight(highlight);
+    if (event->button() == Qt::LeftButton) {
+        active = !active;
+        setHighlight(highlight);
+        sequencerItem->getSequencer()->toggleStep(step);
+    } else if (event->button() == Qt::RightButton) {
+        RoundaboutSegmentDialog dialog;
+        if (dialog.editSegment(branchFrequency, continueFrequency)) {
+            sequencerItem->getSequencer()->setStepBranchFrequency(step, branchFrequency, continueFrequency);
+        }
+    }
 }
 
 void RoundaboutTestSegmentItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
@@ -398,8 +409,9 @@ void RoundaboutTestSegmentItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     if (QLineF(event->screenPos(), event->buttonDownScreenPos(Qt::LeftButton)).length() < QApplication::startDragDistance()) {
         return;
     }
-    state = !state;
+    active = !active;
     setHighlight(highlight);
+    sequencerItem->getSequencer()->toggleStep(step);
     if (!getConnectionItem()) {
         setConnectionItem(P1, ((RoundaboutScene*)scene())->createConnectionItem());
         getConnectionItem()->startMove(P2);
@@ -457,8 +469,9 @@ RoundaboutTestArrowItem::RoundaboutTestArrowItem(QRectF rect, qreal tipOffset, Q
     setPath(path);
 }
 
-RoundaboutTestKeyItem::RoundaboutTestKeyItem(int step_, int note_, QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, KeyType keyType, QGraphicsItem *parent) :
+RoundaboutTestKeyItem::RoundaboutTestKeyItem(RoundaboutSequencerItem *sequencerItem_, int step_, int note_, QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, KeyType keyType, QGraphicsItem *parent) :
     QGraphicsPathItem(parent),
+    sequencerItem(sequencerItem_),
     step(step_),
     note(note_),
     normalColor(keyType == WHITE ? "lightsteelblue" : "steelblue"),
@@ -519,12 +532,12 @@ void RoundaboutTestKeyItem::mousePressEvent(QGraphicsSceneMouseEvent * event)
 {
     event->accept();
     state = !state;
-    toggledNote(step, note);
+    sequencerItem->getSequencer()->toggleNote(step, note);
     setFlag(QGraphicsItem::ItemIgnoresParentOpacity, state);
     setHighlight(highlight);
 }
 
-RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(int step, QRectF innerMostRect, QRectF outerMostRect, Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent) :
+RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(RoundaboutSequencerItem *sequencerItem, int step, QRectF innerMostRect, QRectF outerMostRect, Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent) :
     QGraphicsPathItem(parent)
 {
     setPen(QPen(Qt::NoPen));
@@ -547,7 +560,7 @@ RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(int step, QRectF innerMos
             }
             QRectF outerKeyRect = (1.0 - from) * innerRect + from * outerRect;
             QRectF innerKeyRect = (1.0 - to) * innerRect + to * outerRect;
-            RoundaboutTestKeyItem *keyItem = new RoundaboutTestKeyItem(step, notes[i], innerKeyRect, outerKeyRect, startAngle, arcLength, RoundaboutTestKeyItem::WHITE, this);
+            RoundaboutTestKeyItem *keyItem = new RoundaboutTestKeyItem(sequencerItem, step, notes[i], innerKeyRect, outerKeyRect, startAngle, arcLength, RoundaboutTestKeyItem::WHITE, this);
             keyItems.append(keyItem);
         }
         // black keys:
@@ -571,9 +584,9 @@ RoundaboutTestKeyboardItem::RoundaboutTestKeyboardItem(int step, QRectF innerMos
             QRectF innerKeyRect = (1.0 - to) * innerRect + to * outerRect;
             RoundaboutTestKeyItem *keyItem;
             if (dir == INNER_TO_OUTER) {
-                keyItem = new RoundaboutTestKeyItem(step, blackNotes[i], innerKeyRect, outerKeyRect, startAngle, blackKeyArcLength, RoundaboutTestKeyItem::BLACK, this);
+                keyItem = new RoundaboutTestKeyItem(sequencerItem, step, blackNotes[i], innerKeyRect, outerKeyRect, startAngle, blackKeyArcLength, RoundaboutTestKeyItem::BLACK, this);
             } else {
-                keyItem = new RoundaboutTestKeyItem(step, blackNotes[i], innerKeyRect, outerKeyRect, startAngle + arcLength - blackKeyArcLength, blackKeyArcLength, RoundaboutTestKeyItem::BLACK, this);
+                keyItem = new RoundaboutTestKeyItem(sequencerItem, step, blackNotes[i], innerKeyRect, outerKeyRect, startAngle + arcLength - blackKeyArcLength, blackKeyArcLength, RoundaboutTestKeyItem::BLACK, this);
             }
             for (int j = 0; j < keyItems.size(); j++) {
                 keyItems[j]->setPath(keyItems[j]->path() - keyItem->path());
@@ -618,7 +631,7 @@ RoundaboutTestSliceItem::RoundaboutTestSliceItem(RoundaboutSequencerItem *sequen
     setBrush(QBrush(normalColor));
     setAcceptHoverEvents(true);
     setPath(createSegmentPath(innerRect, outerRect, startAngle, arcLength));
-    keyboardItem = new RoundaboutTestKeyboardItem(step, innerRect, 0.85 * outerRect, dir, startAngle, arcLength, this);
+    keyboardItem = new RoundaboutTestKeyboardItem(sequencerItem, step, innerRect, 0.85 * outerRect, dir, startAngle, arcLength, this);
     keyboardItem->setLowkey(true);
     segmentItem = new RoundaboutTestSegmentItem(sequencerItem, step, 0.85 * outerRect, outerRect, startAngle, arcLength, this);
 }
@@ -715,14 +728,9 @@ RoundaboutSequencerItem::RoundaboutSequencerItem(RoundaboutSequencer *sequencer_
         RoundaboutTestSliceItem *sliceItem = new RoundaboutTestSliceItem(this, i, 0.25 * innerRect, innerRect, i < steps / 2 ? RoundaboutTestKeyboardItem::INNER_TO_OUTER : RoundaboutTestKeyboardItem::OUTER_TO_INNER, sliceAngle * i - 90 - 0.5 * sliceAngle, sliceAngle, this);
         sliceItem->getKeyboardItem()->setOpacity(0);
         sliceItems.append(sliceItem);
-        for (int j = 0; j < sliceItem->getKeyboardItem()->getNrOfKeys(); j++) {
-            QObject::connect(sliceItem->getKeyboardItem()->getKeyItem(j), SIGNAL(toggledNote(int,int)), sequencer, SLOT(toggleNote(int,int)));
-        }
     }
     QObject::connect(sequencer, SIGNAL(enteredStep(int)), this, SLOT(onEnteredStep(int)));
     QObject::connect(sequencer, SIGNAL(leftStep(int)), this, SLOT(onLeftStep(int)));
-    QObject::connect(this, SIGNAL(toggleNote(int,int)), sequencer, SLOT(toggleNote(int,int)));
-    QObject::connect(this, SIGNAL(toggleStep(int)), sequencer, SLOT(toggleStep(int)));
 }
 
 RoundaboutSequencer * RoundaboutSequencerItem::getSequencer()

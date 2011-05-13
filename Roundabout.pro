@@ -23,7 +23,8 @@ SOURCES += main.cpp\
     wheelzoominggraphicsview.cpp \
     roundaboutthread.cpp \
     roundaboutsequencer.cpp \
-    roundabouttoken.cpp
+    roundabouttoken.cpp \
+    roundaboutsegmentdialog.cpp
 
 HEADERS  += roundabout.h \
     roundaboutscene.h \
@@ -32,9 +33,11 @@ HEADERS  += roundabout.h \
     roundaboutthread.h \
     ringbuffer.h \
     roundaboutsequencer.h \
-    roundabouttoken.h
+    roundabouttoken.h \
+    roundaboutsegmentdialog.h
 
-FORMS    += roundabout.ui
+FORMS    += roundabout.ui \
+    roundaboutsegmentdialog.ui
 
 OTHER_FILES += \
     README \

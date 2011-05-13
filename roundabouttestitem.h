@@ -115,10 +115,11 @@ private:
     RoundaboutSequencerItem *sequencerItem;
     Shape myShape;
     QColor normalColor, highlightedColor, stateColor;
-    bool state, hover, highlight;
+    bool active, hover, highlight;
     QPainterPath normalPath, bentAtBeginPath, bentAtEndPath;
     QPointF bentAtEndAnchor, bentAtBeginAnchor;
     qreal bentAtEndAngle, bentAtBeginAngle;
+    int branchFrequency, continueFrequency;
 };
 
 class RoundaboutTestArrowItem : public QGraphicsPathItem
@@ -130,25 +131,23 @@ private:
     QColor normalColor;
 };
 
-class RoundaboutTestKeyItem : public QObject, public QGraphicsPathItem
+class RoundaboutTestKeyItem : public QGraphicsPathItem
 {
-    Q_OBJECT
 public:
     enum KeyType {
         BLACK,
         WHITE
     };
 
-    RoundaboutTestKeyItem(int step, int note, QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, KeyType keyType, QGraphicsItem *parent = 0);
+    RoundaboutTestKeyItem(RoundaboutSequencerItem *sequencerItem, int step, int note, QRectF innerRect, QRectF outerRect, qreal startAngle, qreal arcLength, KeyType keyType, QGraphicsItem *parent = 0);
     void setHighlight(bool highlight);
     void setLowkey(bool lowkey);
-signals:
-    void toggledNote(int step, int note);
 protected:
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent * event);
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent * event);
     virtual void mousePressEvent(QGraphicsSceneMouseEvent * event);
 private:
+    RoundaboutSequencerItem *sequencerItem;
     int step, note;
     QColor normalColor, highlightedColor, stateColor, lowkeyColor;
     bool state, hover, highlight, lowkey;
@@ -161,7 +160,7 @@ public:
         INNER_TO_OUTER,
         OUTER_TO_INNER
     };
-    RoundaboutTestKeyboardItem(int step, QRectF innerRect, QRectF outerRect, Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent = 0);
+    RoundaboutTestKeyboardItem(RoundaboutSequencerItem *sequencerItem, int step, QRectF innerRect, QRectF outerRect, Direction dir, qreal startAngle, qreal arcLength, QGraphicsItem *parent = 0);
     void setHighlight(bool highlight);
     void setLowkey(bool lowkey);
     int getNrOfKeys() const;
@@ -210,9 +209,6 @@ public:
     RoundaboutSequencerItem(RoundaboutSequencer *sequencer, QGraphicsItem *parent = 0, QGraphicsScene *scene = 0);
     RoundaboutSequencer * getSequencer();
     virtual RoundaboutTestConnectable * getConnectableAt(QPointF scenePos);
-signals:
-    void toggleStep(int step);
-    void toggleNote(int step, int note);
 public slots:
     void onEnteredStep(int step);
     void onLeftStep(int step);

@@ -32,11 +32,6 @@ RoundaboutSequencer::RoundaboutSequencer(QObject *parent) :
     activeStep(0),
     steps(16)
 {
-    for (int i = 0; i < steps.size(); i++) {
-        steps[i].active = true;
-        steps[i].activeNotes = activeNotes;
-        steps[i].connection = 0;
-    }
 }
 
 void RoundaboutSequencer::processChangeInputChannel(unsigned char channel)
@@ -60,7 +55,11 @@ RoundaboutSequencer * RoundaboutSequencer::processStepBegin(QVector<MidiEvent> &
 {
     // determine current step:
     activeStep = nextStep;
-    activeNotes = steps[activeStep].activeNotes;
+    if (steps[activeStep].active) {
+        activeNotes = steps[activeStep].activeNotes;
+    } else {
+        activeNotes.fill(false);
+    }
     activeBaseNoteNumber = baseNoteNumber;
     // send step entered event:
     RoundaboutSequencerOutboundEvent event;
@@ -75,7 +74,18 @@ RoundaboutSequencer * RoundaboutSequencer::processStepBegin(QVector<MidiEvent> &
     }
     // determine next step (maybe in another roundabout):
     RoundaboutSequencer *nextSequencer = this;
-    if (steps[nextStep].connection) {
+    bool branch = steps[nextStep].connection && (steps[nextStep].branchCounter < steps[nextStep].branchFrequency);
+    int sumOfFrequencies = qMax(1, steps[nextStep].branchFrequency + steps[nextStep].continueFrequency);
+    if (steps[nextStep].connection && (sumOfFrequencies != 1)) {
+        steps[nextStep].branchCounter = (steps[nextStep].branchCounter + 1) % sumOfFrequencies;
+        // signal the branch counter change:
+        RoundaboutSequencerOutboundEvent event;
+        event.eventType = RoundaboutSequencerOutboundEvent::CHANGED_BRANCH_COUNTER;
+        event.step = nextStep;
+        event.branchCounter = steps[nextStep].branchCounter;
+        writeOutboundEvent(event);
+    }
+    if (branch) {
         Step &step = steps[nextStep];
         step.connection->setNextStep(step.connectedStep);
         nextSequencer = step.connection;
@@ -120,7 +130,6 @@ void RoundaboutSequencer::processMidiEvents(const QVector<MidiEvent> &input)
 
 void RoundaboutSequencer::toggleStep(int step)
 {
-    Q_ASSERT((step >= 0) && (step < steps.size()));
     RoundaboutSequencerInboundEvent event;
     event.eventType = RoundaboutSequencerInboundEvent::TOGGLE_STEP;
     event.step = step;
@@ -129,7 +138,6 @@ void RoundaboutSequencer::toggleStep(int step)
 
 void RoundaboutSequencer::toggleNote(int step, int note)
 {
-    Q_ASSERT((step >= 0) && (step < steps.size()));
     RoundaboutSequencerInboundEvent event;
     event.eventType = RoundaboutSequencerInboundEvent::TOGGLE_NOTE;
     event.step = step;
@@ -139,8 +147,6 @@ void RoundaboutSequencer::toggleNote(int step, int note)
 
 void RoundaboutSequencer::connect(int step, RoundaboutSequencer *sequencer, int connectedStep)
 {
-    Q_ASSERT((step >= 0) && (step < steps.size()));
-    Q_ASSERT(!sequencer || ((connectedStep >= 0) && (connectedStep < sequencer->steps.size())));
     RoundaboutSequencerInboundEvent event;
     event.eventType = RoundaboutSequencerInboundEvent::CONNECT_STEP;
     event.step = step;
@@ -154,6 +160,16 @@ void RoundaboutSequencer::disconnect(int step)
     connect(step, 0, 0);
 }
 
+void RoundaboutSequencer::setStepBranchFrequency(int step, int branchFrequency, int continueFrequency)
+{
+    RoundaboutSequencerInboundEvent event;
+    event.eventType = RoundaboutSequencerInboundEvent::CHANGE_STEP_BRANCH_FREQUENCY;
+    event.step = step;
+    event.branchFrequency = branchFrequency;
+    event.continueFrequency = continueFrequency;
+    writeInboundEvent(event);
+}
+
 void RoundaboutSequencer::processInboundEvent(RoundaboutSequencerInboundEvent &event)
 {
     Q_ASSERT((event.step >= 0) && (event.step < steps.size()));
@@ -163,8 +179,13 @@ void RoundaboutSequencer::processInboundEvent(RoundaboutSequencerInboundEvent &e
         Q_ASSERT((event.note >= 0) && (event.note < steps[event.step].activeNotes.size()));
         steps[event.step].activeNotes.toggleBit(event.note);
     } else if (event.eventType == RoundaboutSequencerInboundEvent::CONNECT_STEP) {
+        Q_ASSERT(!event.sequencer || ((event.connectedStep >= 0) && (event.connectedStep < event.sequencer->steps.size())));
         steps[event.step].connection = event.sequencer;
         steps[event.step].connectedStep = event.connectedStep;
+    } else if (event.eventType == RoundaboutSequencerInboundEvent::CHANGE_STEP_BRANCH_FREQUENCY) {
+        steps[event.step].branchFrequency = event.branchFrequency;
+        steps[event.step].continueFrequency = event.continueFrequency;
+        steps[event.step].branchCounter = 0;
     }
 }
 
@@ -174,6 +195,8 @@ void RoundaboutSequencer::processOutboundEvent(RoundaboutSequencerOutboundEvent 
         enteredStep(event.step);
     } else if (event.eventType == RoundaboutSequencerOutboundEvent::LEFT_STEP) {
         leftStep(event.step);
+    } else if (event.eventType == RoundaboutSequencerOutboundEvent::CHANGED_BRANCH_COUNTER) {
+        changedBranchCounter(event.step, event.branchCounter);
     }
 }
 
