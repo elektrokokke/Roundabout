@@ -278,6 +278,7 @@ int RoundaboutThread::process(jack_nframes_t nframes)
             }
             activeSequencer = 0;
             sequencer = sequencers.first();
+            sequencer->setNextStep(0);
             stepExpectedAtNextBufferBegin = true;
         }
     }
