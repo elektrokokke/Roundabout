@@ -727,7 +727,8 @@ RoundaboutSequencerItem::RoundaboutSequencerItem(RoundaboutSequencer *sequencer_
     new RoundaboutTestCenterItem(0.25 * innerRect, this);
     // create a slice for each step:
     for (int i = 0; i < steps; i++) {
-        RoundaboutTestSliceItem *sliceItem = new RoundaboutTestSliceItem(this, i, 0.25 * innerRect, innerRect, i < steps / 2 ? RoundaboutTestKeyboardItem::INNER_TO_OUTER : RoundaboutTestKeyboardItem::OUTER_TO_INNER, sliceAngle * i - 90 - 0.5 * sliceAngle, sliceAngle, this);
+        //RoundaboutTestSliceItem *sliceItem = new RoundaboutTestSliceItem(this, i, 0.25 * innerRect, innerRect, i < steps / 2 ? RoundaboutTestKeyboardItem::INNER_TO_OUTER : RoundaboutTestKeyboardItem::OUTER_TO_INNER, sliceAngle * i - 90 - 0.5 * sliceAngle, sliceAngle, this);
+        RoundaboutTestSliceItem *sliceItem = new RoundaboutTestSliceItem(this, i, 0.25 * innerRect, innerRect, RoundaboutTestKeyboardItem::INNER_TO_OUTER, sliceAngle * i - 90 - 0.5 * sliceAngle, sliceAngle, this);
         sliceItem->getKeyboardItem()->setOpacity(0);
         sliceItems.append(sliceItem);
     }
