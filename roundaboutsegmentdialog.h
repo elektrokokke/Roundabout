@@ -12,10 +12,11 @@ class RoundaboutSegmentDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit RoundaboutSegmentDialog(QWidget *parent = 0);
+    explicit RoundaboutSegmentDialog(int branchFrequency, int continueFrequency, QWidget *parent = 0);
     ~RoundaboutSegmentDialog();
 
-    bool editSegment(int &branchFrequency, int &continueFrequency);
+    int getBranchFrequency() const;
+    int getContinueFrequency() const;
 
 private:
     Ui::RoundaboutSegmentDialog *ui;

@@ -1,11 +1,13 @@
 #include "roundaboutsegmentdialog.h"
 #include "ui_roundaboutsegmentdialog.h"
 
-RoundaboutSegmentDialog::RoundaboutSegmentDialog(QWidget *parent) :
+RoundaboutSegmentDialog::RoundaboutSegmentDialog(int branchFrequency, int continueFrequency, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::RoundaboutSegmentDialog)
 {
     ui->setupUi(this);
+    ui->spinBoxBranchFrequency->setValue(branchFrequency);
+    ui->spinBoxContinueFrequency->setValue(continueFrequency);
 }
 
 RoundaboutSegmentDialog::~RoundaboutSegmentDialog()
@@ -13,15 +15,12 @@ RoundaboutSegmentDialog::~RoundaboutSegmentDialog()
     delete ui;
 }
 
-bool RoundaboutSegmentDialog::editSegment(int &branchFrequency, int &continueFrequency)
+int RoundaboutSegmentDialog::getBranchFrequency() const
 {
-    ui->spinBoxBranchFrequency->setValue(branchFrequency);
-    ui->spinBoxContinueFrequency->setValue(continueFrequency);
-    if (exec() == QDialog::Accepted) {
-        branchFrequency = ui->spinBoxBranchFrequency->value();
-        continueFrequency = ui->spinBoxContinueFrequency->value();
-        return true;
-    } else {
-        return false;
-    }
+    return ui->spinBoxBranchFrequency->value();
+}
+
+int RoundaboutSegmentDialog::getContinueFrequency() const
+{
+    return ui->spinBoxContinueFrequency->value();
 }

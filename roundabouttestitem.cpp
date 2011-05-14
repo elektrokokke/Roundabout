@@ -397,8 +397,10 @@ void RoundaboutTestSegmentItem::mousePressEvent(QGraphicsSceneMouseEvent * event
         setHighlight(highlight);
         sequencerItem->getSequencer()->toggleStep(step);
     } else if (event->button() == Qt::RightButton) {
-        RoundaboutSegmentDialog dialog;
-        if (dialog.editSegment(branchFrequency, continueFrequency)) {
+        RoundaboutSegmentDialog dialog(branchFrequency, continueFrequency);
+        if (dialog.exec() == QDialog::Accepted) {
+            branchFrequency = dialog.getBranchFrequency();
+            continueFrequency = dialog.getContinueFrequency();
             sequencerItem->getSequencer()->setStepBranchFrequency(step, branchFrequency, continueFrequency);
         }
     }
